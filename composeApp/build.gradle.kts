@@ -39,6 +39,7 @@ kotlin {
             implementation(libs.koin.android)
         }
         commonMain.dependencies {
+
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -54,10 +55,10 @@ kotlin {
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(project.dependencies.platform(libs.koin.annotations.bom))
             implementation(libs.kamel)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.koin.annotations)
