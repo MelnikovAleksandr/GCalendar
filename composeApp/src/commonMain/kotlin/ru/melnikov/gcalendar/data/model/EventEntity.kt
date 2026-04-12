@@ -2,6 +2,7 @@ package ru.melnikov.gcalendar.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,6 +14,10 @@ import androidx.room.PrimaryKey
             childColumns = ["calendarId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index("id", unique = true),
+        Index("calendarId")
     ]
 )
 data class EventEntity(

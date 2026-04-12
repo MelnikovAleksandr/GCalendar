@@ -8,12 +8,14 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
+@Single
 class MockCalendarApiService : CalendarApiService {
     override suspend fun fetchCalendarsForUser(userId: String): List<Calendar> {
         val colors = listOf(0xFF4285F4, 0xFFDB4437, 0xFF0F9D58, 0xFFF4B400, 0xFF8560A8, 0xFF03BCD4)

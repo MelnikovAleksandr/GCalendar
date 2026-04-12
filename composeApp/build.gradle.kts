@@ -20,6 +20,7 @@ kotlin {
     }
     
     listOf(
+        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -36,7 +37,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.koin.android)
+
         }
         commonMain.dependencies {
 
@@ -46,22 +47,24 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.material.icons.extended)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.room.runtime)
             implementation(libs.sqlite.bundled)
             implementation(project.dependencies.platform(libs.ktor))
-            implementation(project.dependencies.platform(libs.koin.bom))
-            implementation(project.dependencies.platform(libs.koin.annotations.bom))
+
             implementation(libs.kamel)
             implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
-            implementation(libs.koin.annotations)
+            api(libs.koin.annotations)
+
             implementation(libs.navigation.compose)
         }
         iosMain.dependencies {
@@ -85,18 +88,22 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
-dependencies {
-    debugImplementation(libs.compose.uiTooling)
-    ksp(libs.room.compiler)
-    add("kspCommonMainMetadata", libs.koin.ksp.compiler)
-    add("kspAndroid", libs.koin.ksp.compiler)
-    add("kspIosArm64", libs.koin.ksp.compiler)
-    add("kspIosSimulatorArm64", libs.koin.ksp.compiler)
-}
-
 ksp {
     arg("KOIN_USE_COMPOSE_VIEWMODEL","true")
-    arg("KOIN_CONFIG_CHECK","true")
+}
+
+dependencies {
+    debugImplementation(libs.compose.uiTooling)
+    add("kspCommonMainMetadata", libs.koin.ksp.compiler)
+    listOf(
+        "kspAndroid",
+        "kspIosSimulatorArm64",
+        "kspIosX64",
+        "kspIosArm64"
+    ).forEach {
+        add(it, libs.room.compiler)
+        add(it, libs.koin.ksp.compiler)
+    }
 }
 
 afterEvaluate {

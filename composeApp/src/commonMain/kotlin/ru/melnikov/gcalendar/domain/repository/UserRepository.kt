@@ -2,10 +2,12 @@ package ru.melnikov.gcalendar.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.local.UserDao
 import ru.melnikov.gcalendar.data.model.UserEntity
 import ru.melnikov.gcalendar.domain.model.User
 
+@Single
 class UserRepository(private val userDao: UserDao) {
     fun getAllUsers(): Flow<List<User>> =
         userDao.getAllUsers().map { entities -> entities.map { it.toUser() } }
