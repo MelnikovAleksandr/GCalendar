@@ -55,7 +55,7 @@ kotlin {
             implementation(libs.sqlite.bundled)
             implementation(project.dependencies.platform(libs.ktor))
 
-            implementation(libs.kamel)
+            implementation(libs.landscapist.coil3)
             implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)

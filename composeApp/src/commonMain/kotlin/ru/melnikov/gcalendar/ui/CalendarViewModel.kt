@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
@@ -142,41 +140,12 @@ class CalendarViewModel(
         _uiState.update { it.copy(holidays = holidays) }
     }
 
-    fun selectDay(date: LocalDate) {
-        _uiState.update {
-            it.copy(
-                selectedDay = date,
-                weekStartDate = CalendarUiState.getWeekStartDate(date),
-                threeDayStartDate = date
-            )
-        }
-    }
-
-    fun selectMonth(month: Month, year: Int) {
-        val yearMonth = YearMonth(year, month)
-        val firstDayOfMonth = LocalDate(year, month, 1)
-
-        _uiState.update {
-            it.copy(
-                selectedMonth = yearMonth,
-                selectedDay = firstDayOfMonth,
-                weekStartDate = CalendarUiState.getWeekStartDate(firstDayOfMonth),
-                threeDayStartDate = firstDayOfMonth
-            )
-        }
-    }
-
-    fun selectToday() {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-        selectDay(today)
-    }
-
     fun selectView(view: CalendarView) {
         _uiState.update { it.copy(currentView = view) }
     }
 
-    fun toggleMonthDropdown() {
-        _uiState.update { it.copy(showMonthDropdown = !it.showMonthDropdown) }
+    fun setTopAppBarMonthDropdown(viewType: TopBarCalendarView) {
+        _uiState.update { it.copy(showMonthDropdown = viewType) }
     }
 
     fun toggleCalendarVisibility(calendar: Calendar) {

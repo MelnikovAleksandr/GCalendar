@@ -14,25 +14,17 @@ import ru.melnikov.gcalendar.domain.model.User
 import kotlin.time.Clock
 
 data class CalendarUiState(
-    val currentDate: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date,
-    val selectedDay: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date,
-    val selectedMonth: YearMonth = YearMonth(
-        selectedDay.year,
-        selectedDay.month
-    ),
-
+    val selectedDay: LocalDate = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()).date,
     val currentView: CalendarView = CalendarView.Month,
-    val showMonthDropdown: Boolean = false,
-
+    val showMonthDropdown: TopBarCalendarView = TopBarCalendarView.NoView,
     val accounts: List<User> = emptyList(),
     val calendars: List<Calendar> = emptyList(),
     val events: List<Event> = emptyList(),
     val holidays: List<Holiday> = emptyList(),
-
     val weekStartDate: LocalDate = getWeekStartDate(selectedDay),
-    val threeDayStartDate: LocalDate = selectedDay,
+    val threeDayStartDate: LocalDate = get3DayStartDate(selectedDay),
     val upcomingEvents: List<Event> = getUpcomingEvents(events, selectedDay),
-
     val showAddEventDialog: Boolean = false,
     val selectedEvent: Event? = null
 ) {
@@ -42,13 +34,20 @@ data class CalendarUiState(
             return date.minus(DatePeriod(days = dayOfWeek))
         }
 
+        internal fun get3DayStartDate(date: LocalDate): LocalDate {
+            val dayOfWeek = date.dayOfWeek.ordinal % 3
+            return date.minus(DatePeriod(days = dayOfWeek))
+        }
+
         internal fun getUpcomingEvents(events: List<Event>, fromDate: LocalDate): List<Event> {
             val fromInstant = fromDate.atStartOfDayIn(TimeZone.currentSystemDefault())
-            val toInstant = fromDate.plus(DatePeriod(days = 30)).atStartOfDayIn(TimeZone
-                .currentSystemDefault())
-
+            val toInstant =
+                fromDate.plus(DatePeriod(days = 30)).atStartOfDayIn(TimeZone.currentSystemDefault())
             return events
-                .filter { it.startTime >= fromInstant.toEpochMilliseconds() && it.startTime <= toInstant.toEpochMilliseconds() }
+                .filter {
+                    it.startTime >= fromInstant.toEpochMilliseconds()
+                            && it.startTime <= toInstant.toEpochMilliseconds()
+                }
                 .sortedBy { it.startTime }
 
         }
