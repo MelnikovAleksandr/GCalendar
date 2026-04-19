@@ -17,11 +17,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Menu
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.Bars
+import compose.icons.fontawesomeicons.solid.Edit
+import compose.icons.fontawesomeicons.solid.LocationArrow
+import compose.icons.fontawesomeicons.solid.Trash
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -257,7 +258,7 @@ fun EventDetailsDialog(
                 verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
-                    imageVector = Icons.Default.Menu,
+                    imageVector = FontAwesomeIcons.Solid.Bars,
                     contentDescription = null,
                     tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -290,7 +291,7 @@ fun EventDetailsDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        imageVector = FontAwesomeIcons.Solid.LocationArrow,
                         contentDescription = null,
                         tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -318,7 +319,8 @@ fun EventDetailsDialog(
             TextButton(
                 onClick = { onDelete(event) }) {
                 Icon(
-                    imageVector = Icons.Default.Delete, contentDescription = "Delete"
+                    imageVector = FontAwesomeIcons.Solid.Trash,
+                    contentDescription = "Delete"
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Delete")
@@ -327,7 +329,8 @@ fun EventDetailsDialog(
             TextButton(
                 onClick = { onEdit(event) }) {
                 Icon(
-                    imageVector = Icons.Default.Edit, contentDescription = "Edit"
+                    imageVector = FontAwesomeIcons.Solid.Edit,
+                    contentDescription = "Edit"
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Edit")

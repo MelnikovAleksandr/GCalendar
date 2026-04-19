@@ -16,7 +16,6 @@ import kotlin.time.Clock
 data class CalendarUiState(
     val selectedDay: LocalDate = Clock.System.now()
         .toLocalDateTime(TimeZone.currentSystemDefault()).date,
-    val currentView: CalendarView = CalendarView.Month,
     val showMonthDropdown: TopBarCalendarView = TopBarCalendarView.NoView,
     val accounts: List<User> = emptyList(),
     val calendars: List<Calendar> = emptyList(),
@@ -37,6 +36,11 @@ data class CalendarUiState(
         internal fun get3DayStartDate(date: LocalDate): LocalDate {
             val dayOfWeek = date.dayOfWeek.ordinal % 3
             return date.minus(DatePeriod(days = dayOfWeek))
+        }
+
+
+        internal fun getOneDayStartDate(date: LocalDate): LocalDate {
+            return date
         }
 
         internal fun getUpcomingEvents(events: List<Event>, fromDate: LocalDate): List<Event> {

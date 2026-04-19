@@ -16,7 +16,8 @@ fun ThreeDayScreen(
     dateStateHolder: DateStateHolder,
     events: List<Event>,
     holidays: List<Holiday>,
-    onEventClick: (Event) -> Unit
+    onEventClick: (Event) -> Unit,
+    onDateClickCallback: () -> Unit
 ) {
     BaseCalendarScreen(
         modifier = modifier,
@@ -25,6 +26,7 @@ fun ThreeDayScreen(
         holidays = holidays,
         onEventClick = onEventClick,
         numDays = 3,
+        onDateClickCallback = onDateClickCallback
     )
 }
 
@@ -37,7 +39,8 @@ fun ThreeDayScreenPreview() {
             dateStateHolder = DateStateHolderImpl(),
             events = emptyList(),
             holidays = emptyList(),
-            onEventClick = {}
+            onEventClick = {},
+            onDateClickCallback = {}
         )
     }
 }

@@ -55,6 +55,7 @@ fun MonthHeader(yearMonth: YearMonth) {
             Text(
                 text = "${yearMonth.month.name.toSentenceCase()} ${yearMonth.year}",
                 style = GCalendarTheme.typography.headlineSmall,
+                color = GCalendarTheme.colorScheme.inverseOnSurface
             )
         }
     }

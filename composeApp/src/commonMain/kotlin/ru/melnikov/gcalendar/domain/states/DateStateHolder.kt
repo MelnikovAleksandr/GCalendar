@@ -6,22 +6,26 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.core.annotation.Single
-import ru.melnikov.gcalendar.ui.CalendarUiState
 import ru.melnikov.gcalendar.ui.YearMonth
 import kotlin.time.Clock
 
 data class DateState(
     val currentDate: LocalDate,
     val selectedDate: LocalDate,
-    val selectedInViewMonth: YearMonth,
-    val viewStartDate: LocalDate,
+    val selectedInViewMonth: YearMonth
 )
+
+enum class ViewType {
+    MONTH_VIEW,
+    WEEK_VIEW,
+    THREE_DAY_VIEW,
+    ONE_DAY_VIEW
+}
 
 interface DateStateHolder {
     val currentDateState: StateFlow<DateState>
     fun updateSelectedInViewMonthState(selectedInViewMonth: YearMonth)
     fun updateSelectedDateState(selectedDate: LocalDate)
-    fun updateViewStartDate(viewStartDate: LocalDate)
 }
 
 @Single
@@ -31,8 +35,7 @@ class DateStateHolderImpl : DateStateHolder {
         DateState(
             date,
             date,
-            YearMonth(date.year, date.month),
-            date
+            YearMonth(date.year, date.month)
         )
     )
     override val currentDateState: StateFlow<DateState> = _currentDateState
@@ -48,16 +51,7 @@ class DateStateHolderImpl : DateStateHolder {
         _currentDateState.tryEmit(
             _currentDateState.value.copy(
                 selectedDate = selectedDate,
-                selectedInViewMonth = YearMonth(selectedDate.year, selectedDate.month),
-                viewStartDate = CalendarUiState.getWeekStartDate(selectedDate)
-            )
-        )
-    }
-
-    override fun updateViewStartDate(viewStartDate: LocalDate) {
-        _currentDateState.tryEmit(
-            _currentDateState.value.copy(
-                viewStartDate = viewStartDate
+                selectedInViewMonth = YearMonth(selectedDate.year, selectedDate.month)
             )
         )
     }

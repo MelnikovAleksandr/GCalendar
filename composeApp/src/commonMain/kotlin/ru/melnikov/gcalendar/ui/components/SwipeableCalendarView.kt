@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +50,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import ru.melnikov.gcalendar.common.customBorder
 import ru.melnikov.gcalendar.common.toLocalDateTime
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
@@ -64,7 +66,6 @@ fun SwipeableCalendarView(
     holidays: List<Holiday> = emptyList(),
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
-    selectedDay: LocalDate,
     onDateRangeChange: (LocalDate) -> Unit,
     numDays: Int = 7,
     timeRange: IntRange = 0..23,
@@ -151,7 +152,6 @@ fun SwipeableCalendarView(
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
             onEventClick = onEventClick,
-            selectedDay = selectedDay,
             currentDate = currentDate,
             scrollState = scrollState,
             headerHeight = headerHeight,
@@ -169,7 +169,6 @@ fun SwipeableCalendarView(
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
             onEventClick = onEventClick,
-            selectedDay = selectedDay,
             currentDate = currentDate,
             scrollState = scrollState,
             headerHeight = headerHeight,
@@ -187,7 +186,6 @@ fun SwipeableCalendarView(
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
             onEventClick = onEventClick,
-            selectedDay = selectedDay,
             currentDate = currentDate,
             scrollState = scrollState,
             headerHeight = headerHeight,
@@ -208,7 +206,6 @@ private fun CalendarContent(
     hourHeightDp: Float,
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
-    selectedDay: LocalDate,
     currentDate: LocalDate,
     scrollState: ScrollState,
     headerHeight: Int,
@@ -218,7 +215,6 @@ private fun CalendarContent(
         DaysHeaderRow(
             startDate = startDate,
             numDays = numDays,
-            selectedDay = selectedDay,
             currentDate = currentDate,
             holidays = holidays,
             onDayClick = onDayClick,
@@ -244,78 +240,91 @@ private fun CalendarContent(
 private fun DaysHeaderRow(
     startDate: LocalDate,
     numDays: Int,
-    selectedDay: LocalDate,
     currentDate: LocalDate,
     holidays: List<Holiday>,
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dates = List(numDays) { index ->
+        startDate.plus(DatePeriod(days = index))
+    }
     Row(
         modifier = modifier
-            .background(GCalendarTheme.colorScheme.surface)
+            .background(GCalendarTheme.colorScheme.onPrimary)
     ) {
-        val dates = List(numDays) { index ->
-            startDate.plus(DatePeriod(days = index))
-        }
-
-        dates.forEach { date ->
-            val isSelected = date == selectedDay
-            val isToday = date == currentDate
-            val holidaysForDate = holidays.filter { holiday ->
-                holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clickable { onDayClick(date) }
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+        if (numDays > 1) {
+            dates.forEach { date ->
+                val isToday = date == currentDate
+                val holidaysForDate = holidays.filter { holiday ->
+                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onDayClick(date) }
+                        .customBorder(
+                            end = true,
+                            bottom = true,
+                            start = true,
+                            startFraction = 0.85f,
+                            startLengthFraction = 1f,
+                            endFraction = 0.85f,
+                            endLengthFraction = 1f,
+                            bottomFraction = 0f,
+                            bottomLengthFraction = 1f,
+                            color = GCalendarTheme.colorScheme.surfaceVariant,
+                            width = 1.dp
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val dayNameLength = when {
-                        numDays <= 3 -> 3
-                        else -> 1
-                    }
-
-                    Text(
-                        text = date.dayOfWeek.name.take(dayNameLength),
-                        style = GCalendarTheme.typography.labelSmall
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .padding(vertical = 4.dp)
-                            .size(28.dp)
-                            .background(
-                                when {
-                                    isSelected -> GCalendarTheme.colorScheme.primary
-                                    isToday -> GCalendarTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                    else -> Color.Transparent
-                                },
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        val dayNameLength = when {
+                            numDays <= 3 -> 3
+                            else -> 1
+                        }
                         Text(
-                            text = date.day.toString(),
-                            style = GCalendarTheme.typography.bodyMedium,
-                            color = when {
-                                isSelected -> Color.White
-                                else -> GCalendarTheme.colorScheme.onSurface
-                            },
+                            text = date.dayOfWeek.name.take(dayNameLength),
+                            style = GCalendarTheme.typography.labelSmall
                         )
-                    }
 
-                    if (holidaysForDate.isNotEmpty()) {
+
+
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFF4CAF50), CircleShape)
-                        )
+                                .padding(vertical = 4.dp)
+                                .size(28.dp)
+                                .background(
+                                    when {
+                                        isToday -> GCalendarTheme.colorScheme.primary
+                                        else -> GCalendarTheme.colorScheme.onPrimary
+                                    },
+                                    if (isToday)
+                                        CircleShape
+                                    else
+                                        RectangleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = date.day.toString(),
+                                style = GCalendarTheme.typography.bodyMedium,
+                                color = when {
+                                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                                    else -> GCalendarTheme.colorScheme.onSurface
+                                },
+                            )
+                        }
+
+                        if (holidaysForDate.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(Color(0xFF4CAF50), CircleShape)
+                            )
+                        }
                     }
                 }
             }
@@ -352,12 +361,12 @@ private fun CalendarEventsGrid(
                         .fillMaxWidth()
                         .height(hourHeightDp.dp)
                 ) {
-                    repeat(numDays) { _ ->
+                    repeat(numDays) {
                         Box(
                             Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .border(0.5.dp, GCalendarTheme.colorScheme.onSurface.copy(0.1f))
+                                .border(0.5.dp, GCalendarTheme.colorScheme.surfaceVariant)
                         )
                     }
                 }
@@ -430,7 +439,7 @@ private fun EventItem(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(Color(event.color ?: 0xFF4285F4.toInt()).copy(alpha = 0.8f))
+            .background(Color(event.color ?: 0xFF4285F4.toInt()))
             .clickable(onClick = onClick)
             .padding(4.dp)
     ) {
@@ -455,7 +464,6 @@ fun SwipeableCalendarViewPreview() {
             holidays = emptyList(),
             onDayClick = {},
             onEventClick = {},
-            selectedDay = LocalDate(2025, 12, 12),
             onDateRangeChange = {},
             scrollState = rememberScrollState(),
             currentDate = LocalDate(2025, 12, 12)

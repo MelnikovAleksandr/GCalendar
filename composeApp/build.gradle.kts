@@ -66,6 +66,7 @@ kotlin {
             api(libs.koin.annotations)
 
             implementation(libs.navigation.compose)
+            implementation(libs.icons)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

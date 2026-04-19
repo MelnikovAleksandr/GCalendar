@@ -10,12 +10,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 
-
-val LocalDimensions = staticCompositionLocalOf { Dimensions }
-val LocalCalendarColors = staticCompositionLocalOf { LightColorScheme }
-val LocalTypography = staticCompositionLocalOf { Typography }
-val LocalShapes = staticCompositionLocalOf { AppShapes }
-
 @Composable
 fun GCalendarTheme(
     shapes: Shapes = GCalendarTheme.shapes,
@@ -27,12 +21,7 @@ fun GCalendarTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-    CompositionLocalProvider(
-        LocalDimensions provides Dimensions,
-        LocalCalendarColors provides colorScheme,
-        LocalTypography provides typography,
-        LocalShapes provides shapes
-    ) {
+    CompositionLocalProvider {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
@@ -44,14 +33,14 @@ fun GCalendarTheme(
 
 object GCalendarTheme {
     val dimensions: Dimensions
-        @Composable @ReadOnlyComposable get() = LocalDimensions.current
+        @Composable @ReadOnlyComposable get() = Dimensions
 
     val colorScheme: ColorScheme
-        @Composable @ReadOnlyComposable get() = LocalCalendarColors.current
+        @Composable @ReadOnlyComposable get() = if (isSystemInDarkTheme()) DarkColorScheme else LightColorScheme
 
     val typography: Typography
-        @Composable @ReadOnlyComposable get() = LocalTypography.current
+        @Composable @ReadOnlyComposable get() = Typography
 
     val shapes: Shapes
-        @Composable @ReadOnlyComposable get() = LocalShapes.current
+        @Composable @ReadOnlyComposable get() = AppShapes
 }

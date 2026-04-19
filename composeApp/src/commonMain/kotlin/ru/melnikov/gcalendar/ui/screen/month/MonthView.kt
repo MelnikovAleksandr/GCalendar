@@ -32,6 +32,7 @@ import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import ru.melnikov.gcalendar.common.customBorder
 import ru.melnikov.gcalendar.common.getBottomSystemBarHeight
 import ru.melnikov.gcalendar.common.getScreenHeight
 import ru.melnikov.gcalendar.common.getScreenWidth
@@ -52,8 +53,7 @@ fun MonthView(
     month: YearMonth,
     events: List<Event>,
     holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit,
-    selectedDay: LocalDate
+    onDayClick: (LocalDate) -> Unit
 ) {
     val firstDayOfMonth = LocalDate(month.year, month.month, 1)
     val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
@@ -90,7 +90,6 @@ fun MonthView(
                         holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                     },
                     isCurrentMonth = false,
-                    isSelected = date == selectedDay,
                     onDayClick = onDayClick
                 )
             }
@@ -108,7 +107,6 @@ fun MonthView(
                     holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                 },
                 isCurrentMonth = true,
-                isSelected = date == selectedDay,
                 onDayClick = onDayClick
             )
         }
@@ -129,7 +127,6 @@ fun MonthView(
                     holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                 },
                 isCurrentMonth = false,
-                isSelected = date == selectedDay,
                 onDayClick = onDayClick
             )
         }
@@ -141,20 +138,37 @@ fun WeekdayHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(GCalendarTheme.colorScheme.surface)
     ) {
         val daysOfWeek = listOf("S", "M", "T", "W", "T", "F", "S")
-
-        daysOfWeek.forEach { day ->
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val ordinalToday = if (today.dayOfWeek.ordinal == 6) 0 else today.dayOfWeek.ordinal + 1
+        daysOfWeek.forEachIndexed { dayIndex, day ->
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(30.dp),
+                    .customBorder(
+                        end = true,
+                        bottom = true,
+                        start = true,
+                        startFraction = 0.70f,
+                        startLengthFraction = 1f,
+                        endFraction = 0.70f,
+                        endLengthFraction = 1f,
+                        bottomFraction = 0f,
+                        bottomLengthFraction = 1f,
+                        color = GCalendarTheme.colorScheme.surfaceVariant,
+                        width = 1.dp
+                    )
+                    .padding(vertical = GCalendarTheme.dimensions.spacing_8),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = day,
-                    style = GCalendarTheme.typography.labelSmall,
+                    style = GCalendarTheme.typography.bodySmall,
+                    color = if (dayIndex == ordinalToday)
+                        GCalendarTheme.colorScheme.primary
+                    else
+                        GCalendarTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -168,7 +182,6 @@ fun DayCell(
     events: List<Event>,
     holidays: List<Holiday>,
     isCurrentMonth: Boolean,
-    isSelected: Boolean,
     onDayClick: (LocalDate) -> Unit
 ) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -182,15 +195,9 @@ fun DayCell(
         modifier = modifier
             .border(
                 width = 0.5.dp,
-                color = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                color = GCalendarTheme.colorScheme.surfaceVariant
             )
             .aspectRatio(screenWidth / screenHeight)
-            .background(
-                when {
-                    isSelected -> GCalendarTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    else -> GCalendarTheme.colorScheme.surface
-                }
-            )
             .noRippleClickable { onDayClick(date) }
     ) {
         Column(
@@ -206,7 +213,6 @@ fun DayCell(
                     .background(
                         when {
                             isToday -> GCalendarTheme.colorScheme.primary
-                            isSelected -> GCalendarTheme.colorScheme.primary.copy(alpha = 0.3f)
                             else -> Color.Transparent
                         },
                         CircleShape
@@ -215,13 +221,12 @@ fun DayCell(
             ) {
                 Text(
                     text = date.day.toString(),
-                    style = GCalendarTheme.typography.bodyMedium,
+                    style = GCalendarTheme.typography.bodySmall,
                     color = when {
-                        isToday -> Color.White
-                        isCurrentMonth -> GCalendarTheme.colorScheme.onSurface
-                        else -> GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    },
-                    fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal
+                        isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                        isCurrentMonth -> GCalendarTheme.colorScheme.onSurfaceVariant
+                        else -> GCalendarTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    }
                 )
             }
 
@@ -295,8 +300,7 @@ fun MonthViewPreview() {
             month = YearMonth(2025, 12),
             events = emptyList(),
             holidays = emptyList(),
-            onDayClick = {},
-            selectedDay = LocalDate(2025, 12, 12)
+            onDayClick = {}
         )
     }
 }
@@ -319,7 +323,6 @@ fun DayCellPreview() {
             events = emptyList(),
             holidays = emptyList(),
             isCurrentMonth = true,
-            isSelected = true,
             onDayClick = {}
         )
     }

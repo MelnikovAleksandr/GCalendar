@@ -50,7 +50,8 @@ class CalendarViewModel(
                 val dummyUser = User(
                     id = "123qwe",
                     name = "Demo User",
-                    email = "user@example.com"
+                    email = "user@example.com",
+                    photoUrl = "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
                 )
                 userRepository.addUser(dummyUser)
 
@@ -138,10 +139,6 @@ class CalendarViewModel(
     private suspend fun loadHolidays(countryCode: String, year: Int) {
         val holidays = apiService.fetchHolidays(countryCode, year)
         _uiState.update { it.copy(holidays = holidays) }
-    }
-
-    fun selectView(view: CalendarView) {
-        _uiState.update { it.copy(currentView = view) }
     }
 
     fun setTopAppBarMonthDropdown(viewType: TopBarCalendarView) {
