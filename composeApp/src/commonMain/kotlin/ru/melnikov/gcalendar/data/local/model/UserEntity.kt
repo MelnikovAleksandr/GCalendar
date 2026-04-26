@@ -1,4 +1,4 @@
-package ru.melnikov.gcalendar.data.model
+package ru.melnikov.gcalendar.data.local.model
 
 import androidx.room.Entity
 import androidx.room.Index

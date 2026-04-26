@@ -8,7 +8,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.local.HolidayDao
-import ru.melnikov.gcalendar.data.model.HolidayEntity
+import ru.melnikov.gcalendar.data.local.model.HolidayEntity
 import ru.melnikov.gcalendar.domain.model.Holiday
 
 @Single

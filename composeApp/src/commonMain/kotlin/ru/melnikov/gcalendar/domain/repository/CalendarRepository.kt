@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.local.CalendarDao
-import ru.melnikov.gcalendar.data.model.CalendarEntity
+import ru.melnikov.gcalendar.data.local.model.CalendarEntity
 import ru.melnikov.gcalendar.domain.model.Calendar
 
 @Single

@@ -4,11 +4,11 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
-import ru.melnikov.gcalendar.data.model.CalendarEntity
-import ru.melnikov.gcalendar.data.model.EventEntity
-import ru.melnikov.gcalendar.data.model.EventReminderEntity
-import ru.melnikov.gcalendar.data.model.HolidayEntity
-import ru.melnikov.gcalendar.data.model.UserEntity
+import ru.melnikov.gcalendar.data.local.model.CalendarEntity
+import ru.melnikov.gcalendar.data.local.model.EventEntity
+import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
+import ru.melnikov.gcalendar.data.local.model.HolidayEntity
+import ru.melnikov.gcalendar.data.local.model.UserEntity
 
 @Database(
     entities = [

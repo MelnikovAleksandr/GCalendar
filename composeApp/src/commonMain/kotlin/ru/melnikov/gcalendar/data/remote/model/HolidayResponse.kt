@@ -1,0 +1,12 @@
+package ru.melnikov.gcalendar.data.remote.model
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class HolidayResponse(
+    @SerialName("meta")
+    val meta: Meta,
+    @SerialName("response")
+    val response: Response
+)

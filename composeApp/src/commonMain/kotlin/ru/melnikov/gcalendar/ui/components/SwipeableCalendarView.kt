@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -58,12 +60,13 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun SwipeableCalendarView(
     startDate: LocalDate,
     events: List<Event>,
-    holidays: List<Holiday> = emptyList(),
+    holidays: List<Holiday>,
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
     onDateRangeChange: (LocalDate) -> Unit,

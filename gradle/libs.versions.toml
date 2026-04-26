@@ -21,7 +21,8 @@ navigation = "2.9.2"
 kotlinx-datetime = "0.7.1"
 compose-material-icons = "1.7.3"
 composeIcons = "1.1.1"
-materialKolor = "2.1.1"
+materialKolor = "4.1.1"
+config = "0.17.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -69,3 +70,4 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room_version" }
+buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "config" }

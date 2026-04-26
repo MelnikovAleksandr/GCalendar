@@ -10,13 +10,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.koin.android.annotation.KoinViewModel
 import ru.melnikov.gcalendar.data.remote.CalendarApiService
+import ru.melnikov.gcalendar.data.remote.HolidayApiService
 import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.User
@@ -26,24 +30,32 @@ import ru.melnikov.gcalendar.domain.repository.HolidayRepository
 import ru.melnikov.gcalendar.domain.repository.UserRepository
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import ru.melnikov.gcalendar.data.remote.Result
+import ru.melnikov.gcalendar.domain.model.Holiday
+import kotlin.time.Instant
 
+@OptIn(ExperimentalTime::class)
 @KoinViewModel
 class CalendarViewModel(
     private val userRepository: UserRepository,
     private val calendarRepository: CalendarRepository,
     private val eventRepository: EventRepository,
     private val holidayRepository: HolidayRepository,
-    private val apiService: CalendarApiService
+    private val apiService: CalendarApiService,
+    private val holidayApiService: HolidayApiService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CalendarUiState())
     val uiState: StateFlow<CalendarUiState> = _uiState.asStateFlow()
-
+    private val now = Clock.System.now()
+    private val currentDate = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
     private val visibleCalendarIds = mutableStateOf<Set<String>>(emptySet())
 
     init {
         viewModelScope.launch {
-            loadUsers()
+            launch { loadUsers() }
+            launch { loadHolidays("RU", currentDate.year) }
         }
     }
 
@@ -98,8 +110,6 @@ class CalendarViewModel(
     }
 
     private suspend fun loadEventsForCalendars(calendarIds: List<String>) {
-        val now = Clock.System.now()
-        val currentDate = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
         val startDate = currentDate.minus(DatePeriod(months = 10))
         val endDate = currentDate.plus(DatePeriod(months = 10))
 
@@ -134,13 +144,30 @@ class CalendarViewModel(
             }
         }
 
-        loadHolidays("RU", currentDate.year)
     }
 
     private suspend fun loadHolidays(countryCode: String, year: Int) {
         val holidays = holidayRepository.getHolidaysForYear(countryCode, year)
         holidays.collectLatest { days ->
-            if(days.isEmpty()) {
+            if (days.isEmpty()) {
+                when (val response = holidayApiService.getHolidays(countryCode, year)) {
+                    is Result.Error -> {
+
+                    }
+
+                    is Result.Success -> {
+                        val holidays = response.data.response
+                            .holidays.map {
+                                Holiday(
+                                    id = it.urlId, name = it.name, date =
+                                        parseDateTime(it.date.iso), countryCode
+                                )
+                            }
+                        holidayRepository.addHolidays(holidays)
+                        _uiState.update { it.copy(holidays = holidays) }
+                    }
+                }
+            } else {
                 _uiState.update { it.copy(holidays = days) }
             }
         }
@@ -230,6 +257,29 @@ class CalendarViewModel(
                     upcomingEvents = CalendarUiState.getUpcomingEvents(updatedEvents, it.selectedDay),
                     selectedEvent = null
                 )
+            }
+        }
+    }
+
+    private fun parseDateTime(dateTimeString: String): Long {
+        return when {
+            dateTimeString.contains("T") -> {
+                try {
+                    Instant.parse(dateTimeString).toEpochMilliseconds()
+                } catch (e: Exception) {
+                    val localDateTime = if (dateTimeString.contains("+") || dateTimeString.contains("Z")) {
+                        val parts = dateTimeString.split("+", "Z").first()
+                        LocalDateTime.parse(parts)
+                    } else {
+                        LocalDateTime.parse(dateTimeString)
+                    }
+                    localDateTime.toInstant(TimeZone.UTC).toEpochMilliseconds()
+                }
+            }
+            else -> {
+                LocalDate.parse(dateTimeString)
+                    .atStartOfDayIn(TimeZone.UTC)
+                    .toEpochMilliseconds()
             }
         }
     }

@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.local.EventDao
-import ru.melnikov.gcalendar.data.model.EventEntity
-import ru.melnikov.gcalendar.data.model.EventReminderEntity
+import ru.melnikov.gcalendar.data.local.model.EventEntity
+import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
 import ru.melnikov.gcalendar.domain.model.Event
 
 @Single

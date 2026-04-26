@@ -5,7 +5,7 @@ import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import ru.melnikov.gcalendar.data.model.CalendarEntity
+import ru.melnikov.gcalendar.data.local.model.CalendarEntity
 
 @Dao
 interface CalendarDao {

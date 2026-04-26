@@ -8,8 +8,8 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import ru.melnikov.gcalendar.data.model.EventEntity
-import ru.melnikov.gcalendar.data.model.EventReminderEntity
+import ru.melnikov.gcalendar.data.local.model.EventEntity
+import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
 
 @Dao
 interface EventDao {
