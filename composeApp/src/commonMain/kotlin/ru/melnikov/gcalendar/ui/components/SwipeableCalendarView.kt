@@ -2,23 +2,30 @@
 
 package ru.melnikov.gcalendar.ui.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -56,6 +63,7 @@ import ru.melnikov.gcalendar.common.customBorder
 import ru.melnikov.gcalendar.common.toLocalDateTime
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
+import ru.melnikov.gcalendar.ui.screen.month.components.EventTag
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -221,9 +229,7 @@ private fun CalendarContent(
             currentDate = currentDate,
             holidays = holidays,
             onDayClick = onDayClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(headerHeight.dp)
+            modifier = Modifier.fillMaxWidth()
         )
 
         CalendarEventsGrid(
@@ -251,21 +257,43 @@ private fun DaysHeaderRow(
     val dates = List(numDays) { index ->
         startDate.plus(DatePeriod(days = index))
     }
+    val anyHasHoliday = dates.any { date ->
+        holidays.any { holiday ->
+            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+        }
+    }
+    val baseHeaderHeight = 60.dp
+    val expandedHeaderHeight = 84.dp
+
+    val headerHeight by animateDpAsState(
+        targetValue = if (anyHasHoliday) expandedHeaderHeight else baseHeaderHeight,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "headerHeightAnimation"
+    )
     Row(
         modifier = modifier
             .background(GCalendarTheme.colorScheme.surfaceContainerHigh)
+            .requiredHeight(headerHeight)
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
     ) {
         if (numDays > 1) {
             dates.forEach { date ->
                 val isToday = date == currentDate
-                val holidaysForDate = holidays.filter { holiday ->
-                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                val holiday = holidays.firstOrNull {
+                    it.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { onDayClick(date) }
                         .customBorder(
                             end = true,
                             bottom = true,
@@ -278,55 +306,59 @@ private fun DaysHeaderRow(
                             bottomLengthFraction = 1f,
                             color = GCalendarTheme.colorScheme.surfaceVariant,
                             width = 1.dp
-                        ),
-                    contentAlignment = Alignment.Center
+                        )
+                        .clickable { onDayClick(date) }
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        val dayNameLength = when {
-                            numDays <= 3 -> 3
-                            else -> 1
-                        }
-                        Text(
-                            text = date.dayOfWeek.name.take(dayNameLength),
-                            style = GCalendarTheme.typography.labelSmall
-                        )
-
-
-
-                        Box(
-                            modifier = Modifier
-                                .padding(vertical = 4.dp)
-                                .size(28.dp)
-                                .background(
-                                    when {
-                                        isToday -> GCalendarTheme.colorScheme.primary
-                                        else -> Color.Transparent
-                                    },
-                                    if (isToday)
-                                        CircleShape
-                                    else
-                                        RectangleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 8.dp)
                         ) {
+                            val dayNameLength = when {
+                                numDays <= 3 -> 3
+                                else -> 1
+                            }
                             Text(
-                                text = date.day.toString(),
-                                style = GCalendarTheme.typography.bodyMedium,
-                                color = when {
-                                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                                    else -> GCalendarTheme.colorScheme.onSurface
-                                },
+                                text = date.dayOfWeek.name.take(dayNameLength),
+                                style = GCalendarTheme.typography.labelSmall
                             )
-                        }
-
-                        if (holidaysForDate.isNotEmpty()) {
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
-                                    .background(Color(0xFF4CAF50), CircleShape)
+                                    .padding(vertical = 4.dp)
+                                    .size(28.dp)
+                                    .background(
+                                        when {
+                                            isToday -> GCalendarTheme.colorScheme.primary
+                                            else -> Color.Transparent
+                                        },
+                                        if (isToday) CircleShape else RectangleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = date.day.toString(),
+                                    style = GCalendarTheme.typography.bodyMedium,
+                                    color = when {
+                                        isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                                        else -> GCalendarTheme.colorScheme.onSurface
+                                    }
+                                )
+                            }
+                        }
+                        if (holiday != null) {
+                            EventTag(
+                                modifier = Modifier
+                                    .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
+                                    .fillMaxWidth(),
+                                text = holiday.name,
+                                color = Color(0xFF7eff73)
                             )
+                        } else {
+                            Spacer(modifier = Modifier.height(if (anyHasHoliday) 24.dp else 0.dp))
                         }
                     }
                 }

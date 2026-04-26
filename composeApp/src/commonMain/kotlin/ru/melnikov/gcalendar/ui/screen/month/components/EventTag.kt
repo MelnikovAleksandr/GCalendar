@@ -18,6 +18,7 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
 @Composable
 fun EventTag(
+    modifier: Modifier = Modifier,
     text: String,
     color: Color,
 ) {
@@ -27,7 +28,7 @@ fun EventTag(
         textAlign = TextAlign.Start,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
             .background(color, RoundedCornerShape(2.dp))
             .padding(2.dp)
     )

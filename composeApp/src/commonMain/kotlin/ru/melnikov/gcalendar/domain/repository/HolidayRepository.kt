@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.domain.repository
 
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +12,7 @@ import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.local.HolidayDao
 import ru.melnikov.gcalendar.data.local.model.HolidayEntity
 import ru.melnikov.gcalendar.domain.model.Holiday
+import kotlin.time.ExperimentalTime
 
 @Single
 class HolidayRepository(private val holidayDao: HolidayDao) {
