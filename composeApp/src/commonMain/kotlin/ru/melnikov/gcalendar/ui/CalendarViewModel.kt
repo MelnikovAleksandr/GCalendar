@@ -22,7 +22,9 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.User
 import ru.melnikov.gcalendar.domain.repository.CalendarRepository
 import ru.melnikov.gcalendar.domain.repository.EventRepository
+import ru.melnikov.gcalendar.domain.repository.HolidayRepository
 import ru.melnikov.gcalendar.domain.repository.UserRepository
+import kotlin.random.Random
 import kotlin.time.Clock
 
 @KoinViewModel
@@ -30,6 +32,7 @@ class CalendarViewModel(
     private val userRepository: UserRepository,
     private val calendarRepository: CalendarRepository,
     private val eventRepository: EventRepository,
+    private val holidayRepository: HolidayRepository,
     private val apiService: CalendarApiService
 ) : ViewModel() {
 
@@ -48,15 +51,13 @@ class CalendarViewModel(
         userRepository.getAllUsers().collectLatest { users ->
             if (users.isEmpty()) {
                 val dummyUser = User(
-                    id = "123qwe",
+                    id = Random.nextInt().toString(),
                     name = "Demo User",
                     email = "user@example.com",
                     photoUrl = "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
                 )
                 userRepository.addUser(dummyUser)
-
                 _uiState.update { it.copy(accounts = listOf(dummyUser)) }
-
                 loadCalendarsForUser(dummyUser.id)
             } else {
                 _uiState.update { it.copy(accounts = users) }
@@ -99,8 +100,8 @@ class CalendarViewModel(
     private suspend fun loadEventsForCalendars(calendarIds: List<String>) {
         val now = Clock.System.now()
         val currentDate = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
-        val startDate = currentDate.minus(DatePeriod(months = 3))
-        val endDate = currentDate.plus(DatePeriod(months = 3))
+        val startDate = currentDate.minus(DatePeriod(months = 10))
+        val endDate = currentDate.plus(DatePeriod(months = 10))
 
         val startTime = startDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
         val endTime = endDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
@@ -137,8 +138,12 @@ class CalendarViewModel(
     }
 
     private suspend fun loadHolidays(countryCode: String, year: Int) {
-        val holidays = apiService.fetchHolidays(countryCode, year)
-        _uiState.update { it.copy(holidays = holidays) }
+        val holidays = holidayRepository.getHolidaysForYear(countryCode, year)
+        holidays.collectLatest { days ->
+            if(days.isEmpty()) {
+                _uiState.update { it.copy(holidays = days) }
+            }
+        }
     }
 
     fun setTopAppBarMonthDropdown(viewType: TopBarCalendarView) {

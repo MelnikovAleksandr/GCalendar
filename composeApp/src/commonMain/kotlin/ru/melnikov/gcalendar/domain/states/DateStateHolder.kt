@@ -15,13 +15,6 @@ data class DateState(
     val selectedInViewMonth: YearMonth
 )
 
-enum class ViewType {
-    MONTH_VIEW,
-    WEEK_VIEW,
-    THREE_DAY_VIEW,
-    ONE_DAY_VIEW
-}
-
 interface DateStateHolder {
     val currentDateState: StateFlow<DateState>
     fun updateSelectedInViewMonthState(selectedInViewMonth: YearMonth)

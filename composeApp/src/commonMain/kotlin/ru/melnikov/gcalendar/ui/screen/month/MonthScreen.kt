@@ -10,7 +10,6 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
 import ru.melnikov.gcalendar.domain.states.DateStateHolderImpl
-import ru.melnikov.gcalendar.domain.states.ViewType
 import ru.melnikov.gcalendar.ui.YearMonth
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
@@ -35,7 +34,6 @@ fun MonthScreen(
             dateStateHolder.updateSelectedDateState(date)
             onDateClick(date)
         },
-        currentSelectedDay = dateState.selectedDate,
         onMonthChange = { yearMonth ->
             dateStateHolder.updateSelectedInViewMonthState(yearMonth)
         }

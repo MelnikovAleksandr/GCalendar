@@ -8,19 +8,21 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+import com.materialkolor.rememberDynamicColorScheme
 
 @Composable
 fun GCalendarTheme(
     shapes: Shapes = GCalendarTheme.shapes,
     typography: Typography = GCalendarTheme.typography,
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    useDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = rememberDynamicColorScheme(
+        Color(0xFF4285F4),
+        useDarkTheme,
+        isAmoled = true
+    )
     CompositionLocalProvider {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -36,7 +38,7 @@ object GCalendarTheme {
         @Composable @ReadOnlyComposable get() = Dimensions
 
     val colorScheme: ColorScheme
-        @Composable @ReadOnlyComposable get() = if (isSystemInDarkTheme()) DarkColorScheme else LightColorScheme
+        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme
 
     val typography: Typography
         @Composable @ReadOnlyComposable get() = Typography

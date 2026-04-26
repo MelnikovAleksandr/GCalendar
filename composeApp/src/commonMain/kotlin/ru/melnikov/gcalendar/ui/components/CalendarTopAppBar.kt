@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -74,6 +73,9 @@ fun CalendarTopAppBar(
     events: List<Event>,
     holidays: List<Holiday>
 ) {
+    val currentYear = dateState.currentDate.year
+
+    val showYear = dateState.selectedInViewMonth.year != currentYear
 
     val rotationDegree by animateFloatAsState(
         targetValue = if (monthDropdownState != TopBarCalendarView.NoView)
@@ -85,10 +87,6 @@ fun CalendarTopAppBar(
         label = "rotation"
     )
 
-    val currentYear = dateState.currentDate.year
-
-    val showYear = dateState.selectedInViewMonth.year != currentYear
-
     val monthTitle = if (showYear) {
         "${dateState.selectedInViewMonth.month.name.toSentenceCase()} ${dateState.selectedInViewMonth.year}"
     } else {
@@ -97,17 +95,17 @@ fun CalendarTopAppBar(
 
     Column(
         modifier = Modifier.background(
-            color = GCalendarTheme.colorScheme.onPrimary
+            color = GCalendarTheme.colorScheme.surfaceContainerHigh
         ).animateContentSize()
     ) {
         TopAppBar(
             colors = TopAppBarColors(
-                containerColor = GCalendarTheme.colorScheme.onPrimary,
-                scrolledContainerColor = GCalendarTheme.colorScheme.onPrimary,
-                navigationIconContentColor = GCalendarTheme.colorScheme.onPrimaryContainer,
-                titleContentColor = GCalendarTheme.colorScheme.onPrimaryContainer,
-                actionIconContentColor = GCalendarTheme.colorScheme.onPrimaryContainer,
-                subtitleContentColor = GCalendarTheme.colorScheme.onPrimaryContainer
+                containerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
+                scrolledContainerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
+                navigationIconContentColor = GCalendarTheme.colorScheme.onSurface,
+                titleContentColor = GCalendarTheme.colorScheme.onSurface,
+                actionIconContentColor = GCalendarTheme.colorScheme.onSurface,
+                subtitleContentColor = GCalendarTheme.colorScheme.onSurface
             ),
             navigationIcon = {
                 IconButton(onClick = onMenuClick) {
@@ -132,19 +130,18 @@ fun CalendarTopAppBar(
                 ) {
                     Text(
                         text = monthTitle,
-                        style = GCalendarTheme.typography.bodyLarge
+                        style = GCalendarTheme.typography.bodyLarge,
+                        color = GCalendarTheme.colorScheme.onSurface
                     )
                     Icon(
                         modifier = Modifier.size(20.dp).rotate(rotationDegree),
                         imageVector = FontAwesomeIcons.Solid.CaretDown,
-                        contentDescription = "Toggle Month Dropdown"
+                        contentDescription = "Toggle Month Dropdown",
                     )
                 }
             },
             actions = {
-                IconButton(onClick = {
-                    // TODO
-                }) {
+                IconButton(onClick = { /* Handle search */ }) {
                     Icon(
                         modifier = Modifier.size(20.dp),
                         imageVector = FontAwesomeIcons.Solid.Search,
@@ -155,7 +152,6 @@ fun CalendarTopAppBar(
                     Text(
                         text = dateState.currentDate.day.toString(),
                         style = GCalendarTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
                     )
                 }
                 CoilImage(
@@ -178,7 +174,7 @@ fun CalendarTopAppBar(
                     ),
                     events = events,
                     holidays = holidays,
-                    onDayClick = onDayClick
+                    onDayClick = onDayClick,
                 )
             }
 
@@ -192,7 +188,7 @@ private fun TopBarMonthView(
     month: YearMonth,
     events: List<Event>,
     holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
 ) {
     val firstDayOfMonth = LocalDate(month.year, month.month, 1)
     val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
@@ -237,10 +233,9 @@ private fun TopAppBarWeekdayHeader() {
         daysOfWeek.forEach { day ->
             Text(
                 text = day,
-                fontWeight = FontWeight.Bold,
+                style = GCalendarTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                fontSize = 12.sp,
-                color = GCalendarTheme.colorScheme.onPrimaryContainer,
+                color = GCalendarTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -256,79 +251,74 @@ private fun TopAppBarDayCell(
 ) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val isToday = date == today
-
-    Box(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .padding(2.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(
-                when {
-                    isToday -> GCalendarTheme.colorScheme.secondaryContainer
-                    else -> Color.Transparent
-                }
-            )
-            .clickable { onDayClick(date) }
-            .padding(4.dp)
+    Column(
+        modifier = Modifier.aspectRatio(1f),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column {
-            Text(
-                text = date.day.toString(),
-                fontSize = 12.sp,
-                style = GCalendarTheme.typography.bodyMedium,
-                color = when {
-                    isToday -> GCalendarTheme.colorScheme.onSecondaryContainer
-                    else -> GCalendarTheme.colorScheme.onPrimaryContainer
-                },
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-
-            holidays.firstOrNull()?.let { holiday ->
-                Text(
-                    text = holiday.name,
-                    style = GCalendarTheme.typography.bodyMedium,
-                    color = Color(0xFF2196F3),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 10.sp,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .fillMaxWidth()
-                        .background(Color(0xFF2196F3).copy(alpha = 0.1f), RoundedCornerShape(2.dp))
-                        .padding(2.dp)
+        Text(
+            text = date.day.toString(),
+            style = GCalendarTheme.typography.bodySmall,
+            color = when {
+                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                else -> GCalendarTheme.colorScheme.onSurfaceVariant
+            },
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .background(
+                    when {
+                        isToday -> GCalendarTheme.colorScheme.primary
+                        else -> Color.Transparent
+                    },
+                    CircleShape
                 )
+                .padding(4.dp)
+                .clickable { onDayClick(date) },
+        )
+
+        holidays.firstOrNull()?.let { holiday ->
+            Text(
+                text = holiday.name,
+                style = GCalendarTheme.typography.bodyMedium,
+                color = Color(0xFF2196F3),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .fillMaxWidth()
+                    .background(Color(0xFF2196F3).copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                    .padding(2.dp)
+            )
+        }
+
+        val maxEventsToDisplay = 3
+        val displayedEvents = events.take(maxEventsToDisplay)
+
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp)
+        ) {
+            displayedEvents.forEach { event ->
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(
+                            Color((event.color ?: 0xFFE91E63).toInt()),
+                            CircleShape
+                        )
+                        .padding(1.dp)
+                )
+                Spacer(modifier = Modifier.width(2.dp))
             }
 
-            val maxEventsToDisplay = 3
-            val displayedEvents = events.take(maxEventsToDisplay)
-
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 2.dp)
-            ) {
-                displayedEvents.forEach { event ->
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(
-                                Color((event.color ?: 0xFFE91E63) as Int),
-                                CircleShape
-                            )
-                            .padding(1.dp)
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                }
-
-                if (events.size > maxEventsToDisplay) {
-                    Text(
-                        text = "+${events.size - maxEventsToDisplay}",
-                        fontSize = 10.sp,
-                        color = GCalendarTheme.colorScheme.onSurface
-                    )
-                }
+            if (events.size > maxEventsToDisplay) {
+                Text(
+                    text = "+${events.size - maxEventsToDisplay}",
+                    fontSize = 10.sp,
+                    color = GCalendarTheme.colorScheme.onSurface
+                )
             }
         }
     }

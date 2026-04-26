@@ -67,6 +67,7 @@ kotlin {
 
             implementation(libs.navigation.compose)
             implementation(libs.icons)
+            implementation(libs.materialKolor)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

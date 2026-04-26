@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,7 @@ fun BaseCalendarScreen(
                 modifier = Modifier
                     .height(hourHeightDp.dp)
                     .width(timeColumnWidth)
-                    .background(color = GCalendarTheme.colorScheme.onPrimary)
+                    .background(color = GCalendarTheme.colorScheme.surfaceContainerHigh)
             ) {
                 if (numDays == 1) {
                     Column(
@@ -72,7 +73,11 @@ fun BaseCalendarScreen(
                     ) {
                         Text(
                             text = startDate.dayOfWeek.name.take(3),
-                            style = GCalendarTheme.typography.labelSmall
+                            style = GCalendarTheme.typography.labelSmall,
+                            color = when {
+                                isToday -> GCalendarTheme.colorScheme.onPrimaryContainer
+                                else -> GCalendarTheme.colorScheme.onSurface
+                            }
                         )
                         Box(
                             modifier = Modifier
@@ -81,7 +86,7 @@ fun BaseCalendarScreen(
                                 .background(
                                     when {
                                         isToday -> GCalendarTheme.colorScheme.primary
-                                        else -> GCalendarTheme.colorScheme.onPrimary
+                                        else -> Color.Transparent
                                     },
                                     if (isToday)
                                         CircleShape

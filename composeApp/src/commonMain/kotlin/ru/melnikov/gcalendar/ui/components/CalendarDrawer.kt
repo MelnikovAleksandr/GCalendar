@@ -212,7 +212,7 @@ fun CalendarViewOption(
     ) {
         Icon(
             modifier = Modifier
-                .size(24.dp),
+                .size(20.dp),
             imageVector = icon,
             tint = if (selected) GCalendarTheme.colorScheme.primary
             else GCalendarTheme.colorScheme.onSurfaceVariant,

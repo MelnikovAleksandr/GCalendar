@@ -1,5 +1,6 @@
 package ru.melnikov.gcalendar.ui.screen.schedule
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,6 +21,7 @@ import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
 import ru.melnikov.gcalendar.ui.YearMonth
 import ru.melnikov.gcalendar.ui.screen.schedule.components.DayWithEvents
+import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
 @Composable
 fun ScheduleScreen(
@@ -105,7 +107,9 @@ fun ScheduleScreen(
 
     LazyColumn(
         state = listState,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .background(GCalendarTheme.colorScheme.surfaceContainerLow)
     ) {
         itemsIndexed(
             items = scheduleState.items,

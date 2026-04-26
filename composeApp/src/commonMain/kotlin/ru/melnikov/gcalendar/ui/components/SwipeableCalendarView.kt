@@ -250,7 +250,7 @@ private fun DaysHeaderRow(
     }
     Row(
         modifier = modifier
-            .background(GCalendarTheme.colorScheme.onPrimary)
+            .background(GCalendarTheme.colorScheme.surfaceContainerHigh)
     ) {
         if (numDays > 1) {
             dates.forEach { date ->
@@ -299,7 +299,7 @@ private fun DaysHeaderRow(
                                 .background(
                                     when {
                                         isToday -> GCalendarTheme.colorScheme.primary
-                                        else -> GCalendarTheme.colorScheme.onPrimary
+                                        else -> Color.Transparent
                                     },
                                     if (isToday)
                                         CircleShape
@@ -349,6 +349,7 @@ private fun CalendarEventsGrid(
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
+            .background(GCalendarTheme.colorScheme.surfaceContainerLow)
     ) {
         val dayColumnWidth = maxWidth / numDays
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())

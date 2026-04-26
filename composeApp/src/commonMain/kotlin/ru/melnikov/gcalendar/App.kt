@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,7 +25,6 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
-import ru.melnikov.gcalendar.domain.states.ViewType
 import ru.melnikov.gcalendar.ui.CalendarView
 import ru.melnikov.gcalendar.ui.CalendarViewModel
 import ru.melnikov.gcalendar.ui.components.AddEventDialog
@@ -68,7 +68,10 @@ fun CalendarApp(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(
+                drawerShape = RectangleShape,
+                drawerContainerColor = GCalendarTheme.colorScheme.surfaceContainerHigh
+            ) {
                 currentRoute?.destination?.route?.let {
                     CalendarDrawer(
                         selectedView = it,

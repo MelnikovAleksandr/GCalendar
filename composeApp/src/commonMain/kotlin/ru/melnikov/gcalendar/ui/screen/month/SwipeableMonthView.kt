@@ -21,6 +21,7 @@ import kotlinx.datetime.LocalDate
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.YearMonth
+import ru.melnikov.gcalendar.ui.screen.month.components.MonthView
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -31,7 +32,6 @@ fun SwipeableMonthView(
     events: List<Event>,
     holidays: List<Holiday>,
     onSpecificDayClicked: (LocalDate) -> Unit,
-    currentSelectedDay: LocalDate,
     onMonthChange: (YearMonth) -> Unit
 ) {
     var size by remember { mutableStateOf(IntSize.Zero) }
