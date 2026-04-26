@@ -266,7 +266,7 @@ class CalendarViewModel(
             dateTimeString.contains("T") -> {
                 try {
                     Instant.parse(dateTimeString).toEpochMilliseconds()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     val localDateTime = if (dateTimeString.contains("+") || dateTimeString.contains("Z")) {
                         val parts = dateTimeString.split("+", "Z").first()
                         LocalDateTime.parse(parts)

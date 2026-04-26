@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.ui.screen.month.components
 
 import androidx.compose.foundation.background
@@ -31,6 +33,7 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun DayCell(
@@ -85,10 +88,12 @@ fun DayCell(
 
         item {
             Spacer(modifier = Modifier.height(2.dp))
-            holidays.firstOrNull()?.let { holiday ->
+            holidays.forEach { holiday ->
                 EventTag(
+                    modifier = Modifier.padding(bottom = 2.dp),
                     text = holiday.name,
                     color = Color(0xFF7eff73),
+                    textColor = GCalendarTheme.colorScheme.inverseOnSurface
                 )
             }
         }
@@ -98,6 +103,7 @@ fun DayCell(
             EventTag(
                 text = event.title,
                 color = Color(event.color ?: 0xFFE91E63.toInt()),
+                textColor = GCalendarTheme.colorScheme.inverseOnSurface
             )
         }
 

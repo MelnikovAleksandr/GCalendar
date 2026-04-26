@@ -21,12 +21,14 @@ fun EventTag(
     modifier: Modifier = Modifier,
     text: String,
     color: Color,
+    textColor: Color,
 ) {
     Text(
         text = text,
         style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
         textAlign = TextAlign.Start,
         maxLines = 1,
+        color = textColor,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier.fillMaxWidth()
             .background(color, RoundedCornerShape(2.dp))
@@ -40,7 +42,8 @@ fun EventTagPreview() {
     GCalendarTheme {
         EventTag(
             text = "Test name",
-            color = Color(0xFF4285F4).copy(alpha = 0.8f)
+            color = Color(0xFF4285F4).copy(alpha = 0.8f),
+            textColor = GCalendarTheme.colorScheme.inverseOnSurface
         )
     }
 }

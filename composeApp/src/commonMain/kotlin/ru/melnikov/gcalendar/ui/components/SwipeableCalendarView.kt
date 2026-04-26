@@ -2,30 +2,25 @@
 
 package ru.melnikov.gcalendar.ui.components
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +42,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -83,7 +81,7 @@ fun SwipeableCalendarView(
     hourHeightDp: Float = 60f,
     scrollState: ScrollState,
     currentDate: LocalDate,
-    headerHeight: Int = 60
+    dynamicHeaderHeightState: MutableState<Int>
 ) {
 
     require(numDays in 1..31) { "numDays must be between 1 and 31" }
@@ -165,10 +163,12 @@ fun SwipeableCalendarView(
             onEventClick = onEventClick,
             currentDate = currentDate,
             scrollState = scrollState,
-            headerHeight = headerHeight,
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(effectiveOffset.roundToInt(), 0) }
+                .offset {
+                    IntOffset(effectiveOffset.roundToInt(), 0)
+                },
+            dynamicHeaderHeightState = dynamicHeaderHeightState
         )
 
         CalendarContent(
@@ -182,10 +182,10 @@ fun SwipeableCalendarView(
             onEventClick = onEventClick,
             currentDate = currentDate,
             scrollState = scrollState,
-            headerHeight = headerHeight,
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(-screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) }
+                .offset { IntOffset(-screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) },
+            dynamicHeaderHeightState = null
         )
 
         CalendarContent(
@@ -199,10 +199,10 @@ fun SwipeableCalendarView(
             onEventClick = onEventClick,
             currentDate = currentDate,
             scrollState = scrollState,
-            headerHeight = headerHeight,
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) }
+                .offset { IntOffset(screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) },
+            dynamicHeaderHeightState = null
         )
     }
 }
@@ -219,8 +219,8 @@ private fun CalendarContent(
     onEventClick: (Event) -> Unit,
     currentDate: LocalDate,
     scrollState: ScrollState,
-    headerHeight: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dynamicHeaderHeightState: MutableState<Int>?
 ) {
     Column(modifier) {
         DaysHeaderRow(
@@ -229,7 +229,8 @@ private fun CalendarContent(
             currentDate = currentDate,
             holidays = holidays,
             onDayClick = onDayClick,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            dynamicHeaderHeightState = dynamicHeaderHeightState
         )
 
         CalendarEventsGrid(
@@ -252,48 +253,38 @@ private fun DaysHeaderRow(
     currentDate: LocalDate,
     holidays: List<Holiday>,
     onDayClick: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dynamicHeaderHeightState: MutableState<Int>?
 ) {
     val dates = List(numDays) { index ->
         startDate.plus(DatePeriod(days = index))
     }
-    val anyHasHoliday = dates.any { date ->
-        holidays.any { holiday ->
-            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-        }
+    val dayNameLength = when {
+        numDays <= 3 -> 3
+        else -> 1
     }
-    val baseHeaderHeight = 60.dp
-    val expandedHeaderHeight = 84.dp
-
-    val headerHeight by animateDpAsState(
-        targetValue = if (anyHasHoliday) expandedHeaderHeight else baseHeaderHeight,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "headerHeightAnimation"
-    )
     Row(
         modifier = modifier
             .background(GCalendarTheme.colorScheme.surfaceContainerHigh)
-            .requiredHeight(headerHeight)
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
+            .height(IntrinsicSize.Min)
+            .heightIn(min = 60.dp)
+            .onGloballyPositioned {
+                if (dynamicHeaderHeightState != null) {
+                    dynamicHeaderHeightState.value = it.size.height
+                }
+            }
     ) {
         if (numDays > 1) {
             dates.forEach { date ->
                 val isToday = date == currentDate
-                val holiday = holidays.firstOrNull {
+                val currentDayHolidays = holidays.filter {
                     it.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                 }
-                Box(
+                Column(
                     modifier = Modifier
-                        .weight(1f)
                         .fillMaxHeight()
+                        .weight(1f)
+                        .padding(top = 8.dp)
                         .customBorder(
                             end = true,
                             bottom = true,
@@ -307,59 +298,77 @@ private fun DaysHeaderRow(
                             color = GCalendarTheme.colorScheme.surfaceVariant,
                             width = 1.dp
                         )
-                        .clickable { onDayClick(date) }
+                        .clickable { onDayClick(date) },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceBetween
+                    Text(
+                        text = date.dayOfWeek.name.take(dayNameLength),
+                        style = GCalendarTheme.typography.labelSmall
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                            .size(28.dp)
+                            .background(
+                                when {
+                                    isToday -> GCalendarTheme.colorScheme.primary
+                                    else -> Color.Transparent
+                                },
+                                if (isToday) CircleShape else RectangleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) {
-                            val dayNameLength = when {
-                                numDays <= 3 -> 3
-                                else -> 1
+                        Text(
+                            text = date.day.toString(),
+                            style = GCalendarTheme.typography.bodyMedium,
+                            color = when {
+                                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                                else -> GCalendarTheme.colorScheme.onSurface
                             }
-                            Text(
-                                text = date.dayOfWeek.name.take(dayNameLength),
-                                style = GCalendarTheme.typography.labelSmall
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .padding(vertical = 4.dp)
-                                    .size(28.dp)
-                                    .background(
-                                        when {
-                                            isToday -> GCalendarTheme.colorScheme.primary
-                                            else -> Color.Transparent
-                                        },
-                                        if (isToday) CircleShape else RectangleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = date.day.toString(),
-                                    style = GCalendarTheme.typography.bodyMedium,
-                                    color = when {
-                                        isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                                        else -> GCalendarTheme.colorScheme.onSurface
-                                    }
+
+                        )
+                    }
+
+                    if (currentDayHolidays.isNotEmpty()) {
+                        Column {
+                            currentDayHolidays.forEach { holiday ->
+                                EventTag(
+                                    modifier = Modifier
+                                        .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
+                                        .fillMaxWidth(),
+                                    text = holiday.name,
+                                    color = Color(0xFF007F73),
+                                    textColor = GCalendarTheme.colorScheme.inverseOnSurface
                                 )
                             }
                         }
-                        if (holiday != null) {
-                            EventTag(
-                                modifier = Modifier
-                                    .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
-                                    .fillMaxWidth(),
-                                text = holiday.name,
-                                color = Color(0xFF7eff73)
-                            )
-                        } else {
-                            Spacer(modifier = Modifier.height(if (anyHasHoliday) 24.dp else 0.dp))
-                        }
+                    }
+                }
+            }
+        } else {
+            val currentDayHolidays = holidays.filter {
+                it.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == dates.first()
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+            ) {
+                if (currentDayHolidays.isNotEmpty()) {
+                    currentDayHolidays.forEach { holiday ->
+                        Text(
+                            text = holiday.name,
+                            style = GCalendarTheme.typography.labelMedium,
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = GCalendarTheme.colorScheme.inverseOnSurface,
+                            modifier = modifier
+                                .padding(8.dp)
+                                .fillMaxWidth()
+                                .background(Color(0xFF007F73), RoundedCornerShape(2.dp))
+                                .padding(8.dp)
+                        )
                     }
                 }
             }
@@ -493,6 +502,7 @@ private fun EventItem(
 @Preview
 @Composable
 fun SwipeableCalendarViewPreview() {
+    val dynamicHeightOfHeaderComposableWithHolidays = remember { mutableStateOf(0) }
     GCalendarTheme {
         SwipeableCalendarView(
             startDate = LocalDate(2025, 12, 12),
@@ -502,7 +512,8 @@ fun SwipeableCalendarViewPreview() {
             onEventClick = {},
             onDateRangeChange = {},
             scrollState = rememberScrollState(),
-            currentDate = LocalDate(2025, 12, 12)
+            currentDate = LocalDate(2025, 12, 12),
+            dynamicHeaderHeightState = dynamicHeightOfHeaderComposableWithHolidays
         )
     }
 }
