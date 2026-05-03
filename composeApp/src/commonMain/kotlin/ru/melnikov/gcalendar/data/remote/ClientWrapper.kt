@@ -7,6 +7,7 @@ import io.ktor.client.request.parameter
 import io.ktor.http.parameters
 import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import ru.melnikov.gcalendar.data.remote.error.DataError
 
 class ClientWrapper(val networkClient: HttpClient) {
@@ -33,7 +34,12 @@ class ClientWrapper(val networkClient: HttpClient) {
         }
         return when (response.status.value) {
             in 200..299 -> {
-                Result.Success(response.body<T>())
+                val json = Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                }
+                val data = json.decodeFromString<T>(response.body())
+                Result.Success(data)
             }
 
             401 -> Result.Error(DataError.Network.UNAUTHORIZED)

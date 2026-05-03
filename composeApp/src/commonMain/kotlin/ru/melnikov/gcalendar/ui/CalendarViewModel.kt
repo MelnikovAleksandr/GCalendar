@@ -17,9 +17,11 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.android.annotation.KoinViewModel
 import ru.melnikov.gcalendar.common.parseDateTime
-import ru.melnikov.gcalendar.data.remote.CalendarApiService
 import ru.melnikov.gcalendar.data.remote.HolidayApiService
+import ru.melnikov.gcalendar.data.remote.RemoteCalendarApiService
 import ru.melnikov.gcalendar.data.remote.Result
+import ru.melnikov.gcalendar.data.remote.model.asCalendar
+import ru.melnikov.gcalendar.data.remote.model.asEvent
 import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
@@ -29,7 +31,6 @@ import ru.melnikov.gcalendar.domain.repository.EventRepository
 import ru.melnikov.gcalendar.domain.repository.HolidayRepository
 import ru.melnikov.gcalendar.domain.repository.UserRepository
 import ru.melnikov.gcalendar.domain.states.CalendarUiState
-import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -40,7 +41,7 @@ class CalendarViewModel(
     private val calendarRepository: CalendarRepository,
     private val eventRepository: EventRepository,
     private val holidayRepository: HolidayRepository,
-    private val apiService: CalendarApiService,
+    private val apiService: RemoteCalendarApiService,
     private val holidayApiService: HolidayApiService
 ) : ViewModel() {
 
@@ -61,7 +62,7 @@ class CalendarViewModel(
         userRepository.getAllUsers().collectLatest { users ->
             if (users.isEmpty()) {
                 val dummyUser = User(
-                    id = Random.nextInt().toString(),
+                    id = "user_id",
                     name = "Demo User",
                     email = "user@example.com",
                     photoUrl = "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
@@ -82,16 +83,24 @@ class CalendarViewModel(
     private suspend fun loadCalendarsForUser(userId: String) {
         calendarRepository.getCalendarsForUser(userId).collectLatest { dbCalendars ->
             if (dbCalendars.isEmpty()) {
-                val apiCalendars = apiService.fetchCalendarsForUser(userId)
-                apiCalendars.forEach { calendar ->
-                    calendarRepository.upsertCalendar(calendar)
+                when (val apiCalendars = apiService.fetchCalendarsForUser(userId)) {
+                    is Result.Error -> {
+                        println("Error loadCalendarsForUser" + apiCalendars.error.toString())
+                    }
+
+                    is Result.Success -> {
+                        println("SUCCESS loadCalendarsForUser" + apiCalendars.data.toString())
+                        val calendars = apiCalendars.data.map { it.asCalendar() }
+                        calendars.forEach { calendar ->
+                            calendarRepository.upsertCalendar(calendar)
+                        }
+                        updateVisibleCalendars(calendars)
+
+                        _uiState.update { it.copy(calendars = _uiState.value.calendars + calendars) }
+
+                        loadEventsForCalendars(calendars.map { it.id })
+                    }
                 }
-
-                updateVisibleCalendars(apiCalendars)
-
-                _uiState.update { it.copy(calendars = _uiState.value.calendars + apiCalendars) }
-
-                loadEventsForCalendars(apiCalendars.map { it.id })
             } else {
                 updateVisibleCalendars(dbCalendars)
 
@@ -111,37 +120,52 @@ class CalendarViewModel(
         val startDate = currentDate.minus(DatePeriod(months = 10))
         val endDate = currentDate.plus(DatePeriod(months = 10))
 
-        val startTime = startDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+        val startTime =
+            startDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
         val endTime = endDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
-        eventRepository.getEventsForCalendarsInRange(calendarIds, startTime, endTime).collectLatest { dbEvents ->
-            if (dbEvents.isEmpty()) {
-                val allEvents = mutableListOf<Event>()
+        eventRepository.getEventsForCalendarsInRange(calendarIds, startTime, endTime)
+            .collectLatest { dbEvents ->
+                if (dbEvents.isEmpty()) {
+                    val allEvents = mutableListOf<Event>()
 
-                calendarIds.forEach { calendarId ->
-                    val apiEvents = apiService.fetchEventsForCalendar(calendarId, startTime, endTime)
-                    apiEvents.forEach { event ->
-                        eventRepository.addEvent(event)
+                    calendarIds.forEach { calendarId ->
+                        when (val apiEvents =
+                            apiService.fetchEventsForCalendar(calendarId, startTime, endTime)) {
+                            is Result.Error -> {
+                                println("Error" + apiEvents.error.toString())
+                            }
+
+                            is Result.Success -> {
+                                val events = apiEvents.data.map { it.asEvent() }
+                                events.forEach { event ->
+                                    eventRepository.addEvent(event)
+                                }
+                                allEvents.addAll(events)
+                                _uiState.update {
+                                    it.copy(
+                                        events = allEvents,
+                                        upcomingEvents = CalendarUiState.getUpcomingEvents(
+                                            allEvents,
+                                            currentDate
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
-                    allEvents.addAll(apiEvents)
-                }
-
-                _uiState.update {
-                    it.copy(
-                        events = allEvents,
-                        upcomingEvents = CalendarUiState.getUpcomingEvents(allEvents, currentDate)
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        events = dbEvents,
-                        upcomingEvents = CalendarUiState.getUpcomingEvents(dbEvents, currentDate)
-                    )
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            events = dbEvents,
+                            upcomingEvents = CalendarUiState.getUpcomingEvents(
+                                dbEvents,
+                                currentDate
+                            )
+                        )
+                    }
                 }
             }
-        }
-
     }
 
     private suspend fun loadHolidays(countryCode: String, year: Int) {
@@ -221,7 +245,10 @@ class CalendarViewModel(
                 val updatedEvents = it.events + event
                 it.copy(
                     events = updatedEvents,
-                    upcomingEvents = CalendarUiState.getUpcomingEvents(updatedEvents, it.selectedDay)
+                    upcomingEvents = CalendarUiState.getUpcomingEvents(
+                        updatedEvents,
+                        it.selectedDay
+                    )
                 )
             }
         }
@@ -237,7 +264,10 @@ class CalendarViewModel(
                 }
                 it.copy(
                     events = updatedEvents,
-                    upcomingEvents = CalendarUiState.getUpcomingEvents(updatedEvents, it.selectedDay),
+                    upcomingEvents = CalendarUiState.getUpcomingEvents(
+                        updatedEvents,
+                        it.selectedDay
+                    ),
                     selectedEvent = null
                 )
             }
@@ -252,7 +282,10 @@ class CalendarViewModel(
                 val updatedEvents = it.events.filter { e -> e.id != event.id }
                 it.copy(
                     events = updatedEvents,
-                    upcomingEvents = CalendarUiState.getUpcomingEvents(updatedEvents, it.selectedDay),
+                    upcomingEvents = CalendarUiState.getUpcomingEvents(
+                        updatedEvents,
+                        it.selectedDay
+                    ),
                     selectedEvent = null
                 )
             }
