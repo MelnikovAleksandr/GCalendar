@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
 data class EventResponseItem(
     @SerialName("calendarId")
     val calendarId: String,
-    @SerialName("calenderName")
-    val calenderName: String,
+    @SerialName("calendarName")
+    val calendarName: String,
     @SerialName("description")
     val description: String? = null,
     @SerialName("endTime")
