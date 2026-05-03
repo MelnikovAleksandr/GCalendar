@@ -54,13 +54,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.skydoves.landscapist.coil3.CoilImage
-import compose.icons.FontAwesomeIcons
-import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.CaretDown
-import compose.icons.fontawesomeicons.solid.Search
+import gcalendar.composeapp.generated.resources.Res
+import gcalendar.composeapp.generated.resources.ic_arrow_drop_down
+import gcalendar.composeapp.generated.resources.ic_search
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.painterResource
 import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.common.isLeap
 import ru.melnikov.gcalendar.common.lengthOfMonth
@@ -171,7 +171,7 @@ internal fun CalendarTopAppBar(
                             Modifier
                                 .size(16.dp)
                                 .graphicsLayer { rotationZ = rotationDegree },
-                        imageVector = FontAwesomeIcons.Solid.CaretDown,
+                        painter = painterResource(Res.drawable.ic_arrow_drop_down),
                         contentDescription = "Toggle Month Dropdown",
                     )
                 }
@@ -179,8 +179,7 @@ internal fun CalendarTopAppBar(
             actions = {
                 IconButton(onClick = { /* Handle search */ }) {
                     Icon(
-                        modifier = Modifier.size(16.dp),
-                        imageVector = FontAwesomeIcons.Solid.Search,
+                        painter = painterResource(Res.drawable.ic_search),
                         contentDescription = "Search",
                     )
                 }

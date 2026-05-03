@@ -69,4 +69,9 @@ object GCalendarTheme {
     val shapes: Shapes
         @Composable @ReadOnlyComposable
         get() = AppShapes
+
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    val motion: MotionScheme
+        @Composable @ReadOnlyComposable
+        get() = MaterialTheme.motionScheme
 }

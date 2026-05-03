@@ -18,7 +18,7 @@ plugins {
 kotlin {
     androidTarget {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_23)
         }
     }
     compilerOptions {
@@ -69,8 +69,8 @@ kotlin {
             api(libs.koin.annotations)
 
             implementation(libs.navigation3.compose.ui)
-            implementation(libs.icons)
             implementation(libs.materialKolor)
+            implementation(libs.components.resources)
 
             implementation(libs.store)
 
@@ -147,8 +147,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_23
+        targetCompatibility = JavaVersion.VERSION_23
     }
 }
 
