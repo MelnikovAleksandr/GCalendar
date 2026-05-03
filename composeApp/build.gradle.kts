@@ -47,12 +47,8 @@ kotlin {
         }
         commonMain.dependencies {
 
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
             implementation(libs.jetbrains.material3)
             implementation(libs.kotlinx.collections.immutable)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.material.icons.extended)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
@@ -78,7 +74,6 @@ kotlin {
 
             implementation(libs.store)
 
-            implementation(libs.androidx.adaptive)
             implementation(libs.androidx.adaptive.layout)
             implementation(libs.androidx.adaptive.navigation)
 

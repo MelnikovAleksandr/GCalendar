@@ -2,6 +2,7 @@
 
 package ru.melnikov.gcalendar.common
 
+import androidx.compose.ui.Modifier
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
@@ -119,3 +120,13 @@ fun convertStringToColor(
             ((g and 0xFF) shl 8) or
             (b and 0xFF)
 }
+
+inline fun Modifier.applyIf(
+    condition: Boolean,
+    modifier: Modifier.() -> Modifier,
+): Modifier =
+    if (condition) {
+        then(modifier(Modifier))
+    } else {
+        this
+    }
