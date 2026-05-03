@@ -36,15 +36,16 @@ fun MonthView(
     val totalDaysDisplayed = if (skipPreviousPadding) daysInMonth else firstDayOfWeek + daysInMonth
     val remainingCells = 42 - totalDaysDisplayed
 
-    val eventsByDate = remember(month, events) {
-        val allEvents = events()
+    val allEvents = events()
+    val allHolidays = holidays()
+
+    val eventsByDate = remember(month.year, month.month, allEvents) {
         allEvents.groupBy { event ->
             event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
         }
     }
 
-    val holidaysByDate = remember(month, holidays) {
-        val allHolidays = holidays()
+    val holidaysByDate = remember(month.year, month.month, allHolidays) {
         allHolidays.groupBy { holiday ->
             holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
         }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,30 +36,35 @@ fun ScheduleScreen(
     dateStateHolder: DateStateHolder,
     events: List<Event>,
     holidays: List<Holiday>,
-    onEventClick: (Event) -> Unit
+    onEventClick: (Event) -> Unit,
 ) {
     val dateState by dateStateHolder.currentDateState.collectAsState()
     val currentDate = dateState.currentDate
     val currentYearMonth = YearMonth.from(currentDate)
 
-    val scheduleStateHolder = remember(
-        currentYearMonth.year,
-        currentYearMonth.month,
-        events.size,
-        holidays.size
-    ) {
-        ScheduleStateHolder(
-            initialMonth = currentYearMonth,
-            events = events,
-            holidays = holidays
-        )
-    }
+    val currentEvents = rememberUpdatedState(events)
+    val currentHolidays = rememberUpdatedState(holidays)
+
+    val scheduleStateHolder =
+        remember(
+            currentYearMonth.year,
+            currentYearMonth.month,
+        ) {
+            ScheduleStateHolder(
+                initialMonth = currentYearMonth,
+                events = currentEvents.value,
+                holidays = currentHolidays.value,
+            )
+        }
 
     LaunchedEffect(currentYearMonth) {
         dateStateHolder.updateSelectedInViewMonthState(currentYearMonth)
     }
 
     val listState = rememberLazyListState()
+
+    val isPaginatingBackward = remember { androidx.compose.runtime.mutableStateOf(false) }
+    val isPaginatingForward = remember { androidx.compose.runtime.mutableStateOf(false) }
 
     LaunchedEffect(scheduleStateHolder.initialScrollIndex) {
         if (scheduleStateHolder.initialScrollIndex > 0) {
@@ -76,10 +82,8 @@ fun ScheduleScreen(
                     .firstOrNull { idx ->
                         idx < scheduleStateHolder.items.size &&
                                 scheduleStateHolder.items[idx] is ScheduleItem.MonthHeader
-                    }
-                    ?.let { idx -> scheduleStateHolder.items[idx] as? ScheduleItem.MonthHeader }
-            }
-                .filterNotNull()
+                    }?.let { idx -> scheduleStateHolder.items[idx] as? ScheduleItem.MonthHeader }
+            }.filterNotNull()
                 .distinctUntilChanged()
                 .collect { header ->
                     dateStateHolder.updateSelectedInViewMonthState(header.yearMonth)
@@ -87,16 +91,33 @@ fun ScheduleScreen(
         }
 
         launch {
-            snapshotFlow { listState.firstVisibleItemIndex < ScheduleStateHolder.THRESHOLD }
-                .distinctUntilChanged()
+            snapshotFlow {
+                !isPaginatingBackward.value &&
+                        listState.firstVisibleItemIndex < ScheduleStateHolder.THRESHOLD
+            }.distinctUntilChanged()
                 .collect { needsMore ->
-                    if (needsMore) {
+                    if (needsMore && !isPaginatingBackward.value) {
+                        isPaginatingBackward.value = true
+
                         val firstVisibleIndex = listState.firstVisibleItemIndex
+                        val firstVisibleItemOffset = listState.firstVisibleItemScrollOffset
+
                         val newItemsCount = scheduleStateHolder.loadMoreBackward()
 
                         if (newItemsCount > 0) {
-                            listState.scrollToItem(firstVisibleIndex + newItemsCount)
+                            kotlinx.coroutines.delay(100)
+
+                            try {
+                                listState.scrollToItem(
+                                    index = firstVisibleIndex + newItemsCount,
+                                    scrollOffset = firstVisibleItemOffset,
+                                )
+                            } catch (_: Exception) {
+                            }
                         }
+
+                        kotlinx.coroutines.delay(500)
+                        isPaginatingBackward.value = false
                     }
                 }
         }
@@ -105,12 +126,18 @@ fun ScheduleScreen(
             snapshotFlow {
                 val visibleInfo = listState.layoutInfo.visibleItemsInfo
                 val lastVisibleIndex = visibleInfo.lastOrNull()?.index ?: 0
-                lastVisibleIndex >= scheduleStateHolder.items.size - ScheduleStateHolder.THRESHOLD
-            }
-                .distinctUntilChanged()
+                val totalItems = scheduleStateHolder.items.size
+                !isPaginatingForward.value &&
+                        lastVisibleIndex >= totalItems - ScheduleStateHolder.THRESHOLD &&
+                        totalItems > 0
+            }.distinctUntilChanged()
                 .collect { needsMore ->
-                    if (needsMore) {
+                    if (needsMore && !isPaginatingForward.value) {
+                        isPaginatingForward.value = true
                         scheduleStateHolder.loadMoreForward()
+
+                        kotlinx.coroutines.delay(500)
+                        isPaginatingForward.value = false
                     }
                 }
         }
@@ -119,30 +146,39 @@ fun ScheduleScreen(
     if (scheduleStateHolder.items.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator()
         }
     } else {
         LazyColumn(
             state = listState,
-            modifier = modifier
-                .fillMaxSize()
-                .background(GCalendarTheme.colorScheme.surfaceContainerLow)
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(GCalendarTheme.colorScheme.surfaceContainerLow),
         ) {
             itemsIndexed(
                 items = scheduleStateHolder.items,
-                key = { _, item -> item.uniqueId }
+                key = { _, item -> item.uniqueId },
+                contentType = { _, item ->
+                    when (item) {
+                        is ScheduleItem.MonthHeader -> "month_header"
+                        is ScheduleItem.WeekHeader -> "week_header"
+                        is ScheduleItem.DayEvents -> "day_events"
+                    }
+                },
             ) { _, item ->
                 when (item) {
                     is ScheduleItem.MonthHeader -> MonthHeader(item.yearMonth)
                     is ScheduleItem.WeekHeader -> WeekHeader(item.startDate, item.endDate)
-                    is ScheduleItem.DayEvents -> DayWithEvents(
-                        date = item.date,
-                        events = item.events,
-                        holidays = item.holidays,
-                        onEventClick = onEventClick
-                    )
+                    is ScheduleItem.DayEvents ->
+                        DayWithEvents(
+                            date = item.date,
+                            events = item.events,
+                            holidays = item.holidays,
+                            onEventClick = onEventClick,
+                        )
                 }
             }
         }

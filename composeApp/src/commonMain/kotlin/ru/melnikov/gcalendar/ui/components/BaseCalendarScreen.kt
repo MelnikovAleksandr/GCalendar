@@ -55,9 +55,6 @@ fun BaseCalendarScreen(
         dynamicHeightOfHeaderComposableWithHolidays.value.coerceAtLeast(160).toDp()
     }
 
-    val cachedEvents = remember(events) { events }
-    val cachedHolidays = remember(holidays) { holidays }
-
     Row(
         modifier = modifier
     ) {
@@ -134,8 +131,8 @@ fun BaseCalendarScreen(
         }
         SwipeableCalendarView(
             startDate = startDate,
-            events = cachedEvents,
-            holidays = cachedHolidays,
+            events = events,
+            holidays = holidays,
             onDayClick = { date ->
                 dateStateHolder.updateSelectedDateState(date)
                 onDateClickCallback()

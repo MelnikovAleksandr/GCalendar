@@ -4,14 +4,15 @@ package ru.melnikov.gcalendar.ui.screen.month.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,7 +54,7 @@ fun DayCell(
     val screenHeight =
         getScreenHeight().plus(30.dp) - getTopSystemBarHeight() - getBottomSystemBarHeight()
 
-    LazyColumn(
+    Column(
         modifier = modifier
             .background(GCalendarTheme.colorScheme.surfaceContainerLow)
             .border(
@@ -62,45 +63,44 @@ fun DayCell(
             )
             .aspectRatio(screenWidth / screenHeight)
             .noRippleClickable { onDayClick(date) }
-            .padding(2.dp),
+            .padding(2.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Text(
-                modifier = Modifier
-                    .background(
-                        when {
-                            isToday -> GCalendarTheme.colorScheme.primary
-                            else -> Color.Transparent
-                        },
-                        CircleShape
-                    )
-                    .padding(4.dp),
-                text = date.day.toString(),
-                style = GCalendarTheme.typography.labelSmall,
-                color = when {
-                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                    isCurrentMonth -> GCalendarTheme.colorScheme.onSurface
-                    else -> GCalendarTheme.colorScheme.onSurfaceVariant
-                },
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            modifier = Modifier
+                .background(
+                    when {
+                        isToday -> GCalendarTheme.colorScheme.primary
+                        else -> Color.Transparent
+                    },
+                    CircleShape
+                )
+                .padding(4.dp),
+            text = date.day.toString(),
+            style = GCalendarTheme.typography.labelSmall,
+            color = when {
+                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                isCurrentMonth -> GCalendarTheme.colorScheme.onSurface
+                else -> GCalendarTheme.colorScheme.onSurfaceVariant
+            },
+            textAlign = TextAlign.Center
+        )
+
         if(holidays.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(2.dp))
-                holidays.forEach { holiday ->
-                    EventTag(
-                        modifier = Modifier.padding(bottom = 2.dp),
-                        text = holiday.name,
-                        color = Color(0xFF007F73),
-                        textColor = GCalendarTheme.colorScheme.inverseOnSurface
-                    )
-                }
+            Spacer(modifier = Modifier.height(2.dp))
+            holidays.forEach { holiday ->
+                EventTag(
+                    modifier = Modifier.padding(bottom = 2.dp),
+                    text = holiday.name,
+                    color = Color(0xFF007F73),
+                    textColor = GCalendarTheme.colorScheme.inverseOnSurface
+                )
             }
         }
+
         if(displayedEvents.isNotEmpty()) {
-            items(displayedEvents) { event ->
+            displayedEvents.forEach { event ->
                 Spacer(modifier = Modifier.height(2.dp))
                 EventTag(
                     text = event.title,
@@ -110,16 +110,14 @@ fun DayCell(
             }
 
             if (events.size > maxEventsToShow) {
-                item {
-                    Text(
-                        text = "+${events.size - maxEventsToShow} more",
-                        style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                        textAlign = TextAlign.End,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 2.dp, top = 1.dp)
-                    )
-                }
+                Text(
+                    text = "+${events.size - maxEventsToShow} more",
+                    style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 2.dp, top = 1.dp)
+                )
             }
         }
     }

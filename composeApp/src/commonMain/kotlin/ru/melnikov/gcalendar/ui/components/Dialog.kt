@@ -3,6 +3,7 @@ package ru.melnikov.gcalendar.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,15 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,278 +37,883 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.Bars
+import compose.icons.fontawesomeicons.solid.Bell
+import compose.icons.fontawesomeicons.solid.Clock
 import compose.icons.fontawesomeicons.solid.Edit
 import compose.icons.fontawesomeicons.solid.LocationArrow
-import compose.icons.fontawesomeicons.solid.Trash
+import compose.icons.fontawesomeicons.solid.Times
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import ru.melnikov.gcalendar.common.convertStringToColor
+import ru.melnikov.gcalendar.common.noRippleClickable
 import ru.melnikov.gcalendar.common.toLocalDateTime
 import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
+import ru.melnikov.gcalendar.domain.model.User
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AddEventDialog(
+    user: User,
     calendars: List<Calendar>,
     selectedDate: LocalDate,
+    onSave: (Event) -> Unit = {},
+    onDismiss: () -> Unit = {},
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var selectedCalendarId by remember { mutableStateOf(calendars.firstOrNull()?.id ?: "") }
     var isAllDay by remember { mutableStateOf(false) }
-
+    val interactionSource = remember { MutableInteractionSource() }
+    var selectedEventType by remember { mutableStateOf(EventType.EVENT) }
     var startDateTime by remember {
         mutableStateOf(
             LocalDateTime(
-                selectedDate.year, selectedDate.month, selectedDate.day, 9, 0
-            )
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                12,
+                0,
+            ),
         )
     }
     var endDateTime by remember {
         mutableStateOf(
             LocalDateTime(
-                selectedDate.year, selectedDate.month, selectedDate.day, 10, 0
-            )
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                12,
+                30,
+            ),
         )
     }
-
+    var showMoreOptions by remember { mutableStateOf(false) }
+    var reminderMinutes by remember { mutableStateOf(10) }
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        OutlinedTextField(
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Cancel",
+                modifier =
+                    Modifier.clickable {
+                        onDismiss()
+                    },
+                color = GCalendarTheme.colorScheme.primary,
+            )
+            Text(
+                "Save",
+                style = GCalendarTheme.typography.bodyLargeEmphasized,
+                modifier =
+                    Modifier.clickable {
+                        if (title.isNotBlank()) {
+                            val selectedCalendar = calendars.find { it.id == selectedCalendarId }
+                            val event =
+                                Event(
+                                    id = "",
+                                    calendarId = selectedCalendarId,
+                                    calendarName = selectedCalendar?.name ?: "",
+                                    title = title,
+                                    description = description.takeIf { it.isNotBlank() },
+                                    location = location.takeIf { it.isNotBlank() },
+                                    startTime =
+                                        if (isAllDay) {
+                                            LocalDateTime(
+                                                selectedDate.year,
+                                                selectedDate.month,
+                                                selectedDate.day,
+                                                0,
+                                                0,
+                                            ).toInstant(TimeZone.currentSystemDefault())
+                                                .toEpochMilliseconds()
+                                        } else {
+                                            startDateTime
+                                                .toInstant(TimeZone.currentSystemDefault())
+                                                .toEpochMilliseconds()
+                                        },
+                                    endTime =
+                                        if (isAllDay) {
+                                            LocalDateTime(
+                                                selectedDate.year,
+                                                selectedDate.month,
+                                                selectedDate.day,
+                                                23,
+                                                59,
+                                            ).toInstant(TimeZone.currentSystemDefault())
+                                                .toEpochMilliseconds()
+                                        } else {
+                                            endDateTime
+                                                .toInstant(TimeZone.currentSystemDefault())
+                                                .toEpochMilliseconds()
+                                        },
+                                    isAllDay = isAllDay,
+                                    reminderMinutes =
+                                        if (reminderMinutes > 0) {
+                                            listOf(
+                                                reminderMinutes,
+                                            )
+                                        } else {
+                                            emptyList()
+                                        },
+                                    color =
+                                        selectedCalendar?.color
+                                            ?: convertStringToColor("defaultColor", 255),
+                                )
+                            onSave(event)
+                        }
+                    },
+                color = GCalendarTheme.colorScheme.primary,
+            )
+        }
+
+        TextField(
+            modifier = Modifier.fillMaxWidth().padding(start = 40.dp),
             value = title,
             onValueChange = { title = it },
-            label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth()
+            textStyle = MaterialTheme.typography.headlineSmall,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            interactionSource = interactionSource,
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    errorContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                ),
+            placeholder = {
+                Text(
+                    text = "Add title",
+                    color = GCalendarTheme.colorScheme.onSurface,
+                    style = GCalendarTheme.typography.headlineSmall,
+                )
+            },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth()
+        EventTypeSelector(
+            selectedType = selectedEventType,
+            onTypeSelected = { selectedEventType = it },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
 
-        OutlinedTextField(
-            value = location,
-            onValueChange = { location = it },
-            label = { Text("Location") },
-            modifier = Modifier.fillMaxWidth()
+        CalendarTimeSection(
+            isAllDayBase = isAllDay,
+            selectedDate = selectedDate,
+            startDateTime = startDateTime,
+            endDateTime = endDateTime,
+            onSwitchAllDayChange = {
+                isAllDay = it
+            },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+
+        CalenderSelectionSection(
+            user,
+            calendars,
+            selectedCalendarId,
+            onCalendarSelected =
+                { selectedCalendarId = it },
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+
+        AddEventOption(
+            icon = FontAwesomeIcons.Solid.LocationArrow,
+            text = "Add location",
+            onClick = {
+                showMoreOptions = !showMoreOptions
+            },
+        )
+
+        if (showMoreOptions) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = location,
+                onValueChange = { location = it },
+                placeholder = { Text("Enter location") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+        NotificationRow(
+            reminderMinutes = reminderMinutes,
+            onReminderChange = { reminderMinutes = it },
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), thickness = 1.dp)
+        AddEventOption(
+            icon = FontAwesomeIcons.Solid.Bars,
+            text = "Add description",
+            onClick = { /* Handle add description */ },
+        )
+    }
+}
+
+@Composable
+private fun CalenderSelectionSection(
+    user: User,
+    calendars: List<Calendar>,
+    incomingSelectedCalendarId: String,
+    onCalendarSelected: (String) -> Unit,
+) {
+    var selectedCalendarId by remember { mutableStateOf(incomingSelectedCalendarId) }
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        bottom = 8.dp,
+                        start = 16.dp,
+                    ),
+        ) {
+            CoilImage(
+                imageModel = { user.photoUrl },
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape),
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = user.email,
+                style = GCalendarTheme.typography.bodySmall,
+                color = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+        }
+        OnCalenderList(
+            calendars,
+            selectedCalendarId,
+            onCalendarSelected = {
+                selectedCalendarId = it
+                onCalendarSelected(it)
+            },
+        )
+    }
+}
+
+@Composable
+private fun CalendarTimeSection(
+    isAllDayBase: Boolean,
+    selectedDate: LocalDate,
+    startDateTime: LocalDateTime,
+    endDateTime: LocalDateTime,
+    onSwitchAllDayChange: (Boolean) -> Unit,
+) {
+    var isAllDay by remember { mutableStateOf(isAllDayBase) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier.fillMaxWidth().padding(
+                horizontal = 16.dp,
+            ),
+    ) {
+        Icon(
+            imageVector = FontAwesomeIcons.Solid.Clock,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
 
         Text(
-            text = "Calendar",
-            style = GCalendarTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold
+            text = "All day",
+            style = GCalendarTheme.typography.bodyMedium,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(calendars) { calendar ->
+        Switch(checked = isAllDay, onCheckedChange = {
+            isAllDay = !isAllDay
+            onSwitchAllDayChange(isAllDay)
+        })
+    }
+
+    // Date and time selection
+    if (isAllDay) {
+        TimeDisplayRow(
+            label = "${
+                selectedDate.month.name.lowercase().replaceFirstChar {
+                    it.titlecase()
+                }
+            } ${selectedDate.day}, ${selectedDate.year}",
+            onClick = { /* Handle date picker */ },
+        )
+    } else {
+        TimeDisplayRow(
+            label = "${
+                selectedDate.month.name.lowercase().replaceFirstChar {
+                    it.titlecase()
+                }
+            } ${selectedDate.day}, ${selectedDate.year}",
+            startTime = formatTime(startDateTime),
+            endTime = formatTime(endDateTime),
+            onClick = { /* Handle time picker */ },
+        )
+    }
+}
+
+@Composable
+private fun OnCalenderList(
+    calendars: List<Calendar>,
+    selectedCalendarId: String,
+    onCalendarSelected: (String) -> Unit = {},
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        itemsIndexed(calendars) { index, calendar ->
+            Row(
+                modifier =
+                    Modifier
+                        .padding(
+                            start = if (index == 0) 50.dp else 0.dp,
+                            end = if (index == calendars.size - 1) 16.dp else 0.dp,
+                        ).border(
+                            0.5.dp,
+                            GCalendarTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(8.dp),
+                        ).background(
+                            color =
+                                if (selectedCalendarId != calendar.id) {
+                                    GCalendarTheme.colorScheme.surfaceContainerLow
+                                } else {
+                                    GCalendarTheme.colorScheme.primary
+                                },
+                            RoundedCornerShape(8.dp),
+                        ).padding(8.dp)
+                        .noRippleClickable {
+                            onCalendarSelected(calendar.id)
+                        },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(
-                    modifier = Modifier.size(24.dp).clip(CircleShape)
-                        .background(Color(calendar.color)).border(
-                            width = 2.dp,
-                            color = if (selectedCalendarId == calendar.id) GCalendarTheme.colorScheme
-                                .primary else Color.Transparent,
-                            shape = CircleShape
-                        ).clickable { selectedCalendarId = calendar.id })
+                    modifier =
+                        Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(calendar.color)),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = calendar.name,
+                    style = GCalendarTheme.typography.bodySmall,
+                    color =
+                        if (selectedCalendarId != calendar.id) {
+                            GCalendarTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            GCalendarTheme.colorScheme.onPrimary
+                        },
+                )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
+enum class EventType(
+    val displayName: String,
+) {
+    EVENT("Event"),
+    TASK("Task"),
+    WORKING_LOCATION("Working location"),
+    OUT_OF_OFFICE("Out of office"),
+}
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "All day", style = GCalendarTheme.typography.bodySmall
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Switch(
-                checked = isAllDay, onCheckedChange = { isAllDay = it })
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun EventTypeSelector(
+    selectedType: EventType,
+    onTypeSelected: (EventType) -> Unit,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        itemsIndexed(EventType.entries.toTypedArray()) { index, type ->
+            val isSelected = selectedType == type
+            Box(
+                modifier =
+                    Modifier
+                        .padding(
+                            start = if (index == 0) 54.dp else 0.dp,
+                            end =
+                                if (index ==
+                                    EventType.entries.size - 1
+                                ) {
+                                    16.dp
+                                } else {
+                                    0.dp
+                                },
+                        ).clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isSelected) {
+                                GCalendarTheme.colorScheme.primary
+                            } else {
+                                GCalendarTheme.colorScheme.surfaceVariant
+                            },
+                        ).clickable { onTypeSelected(type) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = type.displayName,
+                    color =
+                        if (isSelected) {
+                            GCalendarTheme.colorScheme.onPrimary
+                        } else {
+                            GCalendarTheme.colorScheme.onSurfaceVariant
+                        },
+                    style = GCalendarTheme.typography.bodyMediumEmphasized,
+                )
+            }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (!isAllDay) {
+@Composable
+private fun TimeDisplayRow(
+    label: String,
+    startTime: String? = null,
+    endTime: String? = null,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(top = 8.dp, bottom = 8.dp, start = 52.dp, end = 16.dp),
+    ) {
+        Text(
+            text = label,
+            style = GCalendarTheme.typography.bodyMedium,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        if (!startTime.isNullOrEmpty()) {
             Text(
-                text = "Start time",
-                style = GCalendarTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "${startDateTime.hour}:${
-                    startDateTime.minute.toString().padStart(2, '0')
-                }",
-                style = GCalendarTheme.typography.bodySmall,
-                modifier = Modifier.clip(RoundedCornerShape(4.dp))
-                    .background(GCalendarTheme.colorScheme.surface).padding(8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "End time",
+                text = startTime,
                 style = GCalendarTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
             )
+        }
+    }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(top = 8.dp, bottom = 8.dp, start = 52.dp, end = 16.dp),
+    ) {
+        Text(
+            text = label,
+            style = GCalendarTheme.typography.bodyMedium,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        if (!endTime.isNullOrEmpty()) {
             Text(
-                text = "${endDateTime.hour}:${
-                    endDateTime.minute.toString().padStart(2, '0')
-                }",
-                style = GCalendarTheme.typography.bodySmall,
-                modifier = Modifier.clip(RoundedCornerShape(4.dp))
-                    .background(GCalendarTheme.colorScheme.surface).padding(8.dp)
+                text = endTime,
+                style = GCalendarTheme.typography.bodyMedium,
             )
         }
     }
 }
 
 @Composable
-fun EventDetailsDialog(
-    event: Event, onEdit: (Event) -> Unit, onDelete: (Event) -> Unit, onDismiss: () -> Unit
+private fun AddEventOption(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
 ) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = text,
+            style = GCalendarTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun NotificationRow(
+    reminderMinutes: Int,
+    onReminderChange: (Int) -> Unit = {},
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Icon(
+            imageVector = FontAwesomeIcons.Solid.Bell,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = "$reminderMinutes minutes before",
+            style = GCalendarTheme.typography.bodyMedium,
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Icon(
+            imageVector = FontAwesomeIcons.Solid.Bars,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        )
+    }
+}
+
+private fun formatTime(dateTime: LocalDateTime): String {
+    val hour =
+        if (dateTime.hour == 0) {
+            12
+        } else if (dateTime.hour > 12) {
+            dateTime.hour - 12
+        } else {
+            dateTime.hour
+        }
+    val minute = dateTime.minute.toString().padStart(2, '0')
+    val amPm = if (dateTime.hour >= 12) "PM" else "AM"
+    return "$hour:$minute $amPm"
+}
+
+private fun formatEventSubheading(event: Event): String {
     val startDateTime = event.startTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val endDateTime = event.endTime.toLocalDateTime(TimeZone.currentSystemDefault())
 
-    val formattedDate =
-        "${startDateTime.date.month.name} ${startDateTime.date.day}, ${startDateTime.date.year}"
-    val formattedStartTime = "${startDateTime.hour % 12}:${
-        startDateTime.minute.toString().padStart(2, '0')
-    } ${if (startDateTime.hour >= 12) "PM" else "AM"}"
-    val formattedEndTime = "${endDateTime.hour % 12}:${
-        endDateTime.minute.toString().padStart(2, '0')
-    } ${if (endDateTime.hour >= 12) "PM" else "AM"}"
+    // Format day of week (e.g., "Friday")
+    val dayOfWeek =
+        startDateTime.date.dayOfWeek.name
+            .lowercase()
+            .replaceFirstChar { it.titlecase() }
 
-    AlertDialog(onDismissRequest = onDismiss, title = null, text = {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+    // Format day and month (e.g., "20 Jun")
+    val day = startDateTime.date.day
+    val month =
+        startDateTime.date.month.name
+            .take(3)
+            .lowercase()
+            .replaceFirstChar { it.titlecase() }
+
+    // Build the main date/time string
+    val mainLine =
+        if (event.isAllDay) {
+            "$dayOfWeek, $day $month"
+        } else {
+            // Format time range (e.g., "6-7PM")
+            val startHour =
+                if (startDateTime.hour == 0) {
+                    12
+                } else if (startDateTime.hour > 12) {
+                    startDateTime.hour - 12
+                } else {
+                    startDateTime.hour
+                }
+            val endHour =
+                if (endDateTime.hour == 0) {
+                    12
+                } else if (endDateTime.hour > 12) {
+                    endDateTime.hour - 12
+                } else {
+                    endDateTime.hour
+                }
+            val startMinute =
+                if (startDateTime.minute == 0) {
+                    ""
+                } else {
+                    ":${
+                        startDateTime.minute.toString().padStart(2, '0')
+                    }"
+                }
+            val endMinute =
+                if (endDateTime.minute == 0) {
+                    ""
+                } else {
+                    ":${
+                        endDateTime.minute.toString().padStart(2, '0')
+                    }"
+                }
+
+            val timeRange =
+                when {
+                    // Same AM/PM period
+                    (startDateTime.hour < 12 && endDateTime.hour < 12) || (startDateTime.hour >= 12 && endDateTime.hour >= 12) -> {
+                        val amPm = if (endDateTime.hour >= 12) "PM" else "AM"
+                        "$startHour$startMinute-$endHour$endMinute$amPm"
+                    }
+                    // Different AM/PM periods
+                    else -> {
+                        val startAmPm = if (startDateTime.hour >= 12) "PM" else "AM"
+                        val endAmPm = if (endDateTime.hour >= 12) "PM" else "AM"
+                        "$startHour$startMinute$startAmPm-$endHour$endMinute$endAmPm"
+                    }
+                }
+
+            "$dayOfWeek, $day $month $timeRange"
+        }
+
+    // Add recurring information if applicable
+    return if (event.isRecurring && !event.recurringRule.isNullOrBlank()) {
+        val recurringText =
+            when {
+                event.recurringRule.contains("WEEKLY", ignoreCase = true) -> "Repeat every week"
+                event.recurringRule.contains("DAILY", ignoreCase = true) -> "Repeat every day"
+                event.recurringRule.contains("MONTHLY", ignoreCase = true) -> "Repeat every month"
+                event.recurringRule.contains("YEARLY", ignoreCase = true) -> "Repeat every year"
+                else -> "Recurring event"
+            }
+        "$mainLine\n$recurringText"
+    } else {
+        mainLine
+    }
+}
+
+@Composable
+fun EventDetailsDialog(
+    event: Event,
+    onEdit: (Event) -> Unit,
+    onDismiss: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = FontAwesomeIcons.Solid.Times,
+                contentDescription = "Close",
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clickable { onDismiss() },
+                tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+            Icon(
+                imageVector = FontAwesomeIcons.Solid.Edit,
+                contentDescription = "Edit",
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clickable { onEdit(event) },
+                tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth().height(8.dp)
-                    .background(Color(event.color))
+                modifier =
+                    Modifier
+                        .width(16.dp)
+                        .height(16.dp)
+                        .background(
+                            Color(event.color),
+                            RoundedCornerShape(2.dp),
+                        ),
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = event.title,
                 style = GCalendarTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = formatEventSubheading(event),
+            style = GCalendarTheme.typography.bodyMedium,
+            color = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = 52.dp, end = 16.dp),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Icon(
+                imageVector = FontAwesomeIcons.Solid.LocationArrow,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = GCalendarTheme.colorScheme.primary,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
+            Text(
+                text = "Join with Google Meet",
+                style = GCalendarTheme.typography.bodyMedium,
+                color = GCalendarTheme.colorScheme.primary,
+            )
+        }
+
+        // Location section
+        event.location?.let { location ->
             Row(
-                verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
             ) {
                 Icon(
-                    imageVector = FontAwesomeIcons.Solid.Bars,
+                    imageVector = FontAwesomeIcons.Solid.LocationArrow,
                     contentDescription = null,
-                    tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    modifier = Modifier.size(16.dp),
+                    tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-                Column {
-                    Text(
-                        text = formattedDate, style = GCalendarTheme.typography.bodyMedium
-                    )
-
-                    if (!event.isAllDay) {
-                        Text(
-                            text = "$formattedStartTime - $formattedEndTime",
-                            style = GCalendarTheme.typography.bodyMedium
-                        )
-                    } else {
-                        Text(
-                            text = "All day", style = GCalendarTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                Text(
+                    text = location,
+                    style = GCalendarTheme.typography.bodyMedium,
+                    color = GCalendarTheme.colorScheme.onSurface,
+                )
             }
+        }
 
-            event.location?.let { location ->
-                Spacer(modifier = Modifier.height(16.dp))
+        // Time section
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Icon(
+                imageVector = FontAwesomeIcons.Solid.Bell,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
 
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = "10 minutes before",
+                style = GCalendarTheme.typography.bodyMedium,
+                color = GCalendarTheme.colorScheme.onSurface,
+            )
+        }
+
+        // Guest list section
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Icon(
+                imageVector = FontAwesomeIcons.Solid.Bars,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = "The full guest list has been hidden at the organiser's request.",
+                style = GCalendarTheme.typography.bodyMedium,
+                color = GCalendarTheme.colorScheme.onSurface,
+            )
+        }
+
+        // Description if available
+        event.description?.let { description ->
+            if (description.isNotEmpty()) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    verticalAlignment = Alignment.Top,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                 ) {
                     Icon(
-                        imageVector = FontAwesomeIcons.Solid.LocationArrow,
+                        imageVector = FontAwesomeIcons.Solid.Bars,
                         contentDescription = null,
-                        tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        modifier = Modifier.size(16.dp).padding(top = 2.dp),
+                        tint = GCalendarTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
                     Text(
-                        text = location, style = GCalendarTheme.typography.bodySmall
-                    )
-                }
-            }
-
-            event.description?.let { description ->
-                if (description.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = description, style = GCalendarTheme.typography.bodySmall
+                        text = description,
+                        style = GCalendarTheme.typography.bodyMedium,
+                        color = GCalendarTheme.colorScheme.onSurface,
                     )
                 }
             }
         }
-    }, confirmButton = {
-        Row {
-            TextButton(
-                onClick = { onDelete(event) }) {
-                Icon(
-                    imageVector = FontAwesomeIcons.Solid.Trash, contentDescription = "Delete"
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Delete")
-            }
-
-            TextButton(
-                onClick = { onEdit(event) }) {
-                Icon(
-                    imageVector = FontAwesomeIcons.Solid.Edit, contentDescription = "Edit"
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Edit")
-            }
-        }
-    }, dismissButton = {
-        TextButton(onClick = onDismiss) {
-            Text("Close")
-        }
-    })
+    }
 }

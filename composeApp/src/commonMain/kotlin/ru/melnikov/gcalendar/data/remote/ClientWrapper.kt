@@ -10,35 +10,38 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import ru.melnikov.gcalendar.data.remote.error.DataError
 
-class ClientWrapper(val networkClient: HttpClient) {
+class ClientWrapper(
+    val networkClient: HttpClient,
+) {
     suspend inline fun <reified T> networkGetUseCase(
         endpoint: String,
         queries: Map<String, String>?,
     ): Result<T, DataError.Network> {
-        val response = try {
-            networkClient.get(endpoint) {
-                parameters {
-                    if (queries != null) {
-                        for ((key, value) in queries) {
-                            parameter(key, value)
+        val response =
+            try {
+                networkClient.get(endpoint) {
+                    parameters {
+                        if (queries != null) {
+                            for ((key, value) in queries) {
+                                parameter(key, value)
+                            }
                         }
                     }
                 }
+            } catch (_: UnresolvedAddressException) {
+                return Result.Error(DataError.Network.NO_INTERNET)
+            } catch (_: SerializationException) {
+                return Result.Error(DataError.Network.SERIALIZATION)
+            } catch (_: Exception) {
+                return Result.Error(DataError.Network.UNKNOWN)
             }
-        } catch (_: UnresolvedAddressException) {
-            return Result.Error(DataError.Network.NO_INTERNET)
-        } catch (_: SerializationException) {
-            return Result.Error(DataError.Network.SERIALIZATION)
-        } catch (e: Exception) {
-            print("networkGetUseCase Error - $e ${e.message}")
-            return Result.Error(DataError.Network.UNKNOWN)
-        }
         return when (response.status.value) {
             in 200..299 -> {
-                val json = Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                }
+                val json =
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    }
                 val data = json.decodeFromString<T>(response.body())
                 Result.Success(data)
             }

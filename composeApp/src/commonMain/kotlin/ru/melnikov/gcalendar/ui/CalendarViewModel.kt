@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalTime::class, ExperimentalAtomicApi::class)
+
 package ru.melnikov.gcalendar.ui
 
 import androidx.lifecycle.ViewModel
@@ -43,92 +44,103 @@ class CalendarViewModel(
     private val eventRepository: EventRepository,
     private val holidayRepository: HolidayRepository,
 ) : ViewModel() {
-
     @OptIn(ExperimentalTime::class)
     private val currentDate =
-        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
 
     @OptIn(ExperimentalTime::class)
-    private val startTime = currentDate
-        .minus(DatePeriod(months = 10))
-        .atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+    private val startTime =
+        currentDate
+            .minus(DatePeriod(months = 10))
+            .atStartOfDayIn(TimeZone.currentSystemDefault())
+            .toEpochMilliseconds()
 
     @OptIn(ExperimentalTime::class)
-    private val endTime = currentDate
-        .plus(DatePeriod(months = 10))
-        .atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+    private val endTime =
+        currentDate
+            .plus(DatePeriod(months = 10))
+            .atStartOfDayIn(TimeZone.currentSystemDefault())
+            .toEpochMilliseconds()
+
     private val _uiState = MutableStateFlow(CalendarUiState(isLoading = true))
 
     @OptIn(ExperimentalAtomicApi::class)
     private val _isInitialized = AtomicBoolean(false)
-    private val users = userRepository.getAllUsers()
-        .catch { exception ->
-            handleError("Failed to load users", exception)
-            emit(emptyList())
-        }
-        .shareIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            replay = 1
-        )
 
-    private val holidays = holidayRepository.getHolidaysForYear("RU", currentDate.year)
-        .catch { exception ->
-            handleError("Failed to load holidays", exception)
-            emit(emptyList())
-        }
-        .shareIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            replay = 1
-        )
+    private val users =
+        userRepository
+            .getAllUsers()
+            .catch { exception ->
+                handleError("Failed to load users", exception)
+                emit(emptyList())
+            }.shareIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                replay = 1,
+            )
 
-    private val calendars = calendarRepository.getCalendarsForUser("user_id")
-        .catch { exception ->
-            handleError("Failed to load calendars", exception)
-            emit(emptyList())
-        }
-        .shareIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            replay = 1
-        )
+    private val holidays =
+        holidayRepository
+            .getHolidaysForYear("RU", currentDate.year)
+            .catch { exception ->
+                handleError("Failed to load holidays", exception)
+                emit(emptyList())
+            }.shareIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                replay = 1,
+            )
 
-    private val events = eventRepository.getEventsForCalendarsInRange("user_id", startTime, endTime)
-        .catch { exception ->
-            handleError("Failed to load events", exception)
-            emit(emptyList())
-        }
-        .shareIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            replay = 1
-        )
+    private val calendars =
+        calendarRepository
+            .getCalendarsForUser("user_id")
+            .catch { exception ->
+                handleError("Failed to load calendars", exception)
+                emit(emptyList())
+            }.shareIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                replay = 1,
+            )
 
-    // Optimized UI state with proper distinctUntilChanged and debouncing
+    private val events =
+        eventRepository
+            .getEventsForCalendarsInRange("user_id", startTime, endTime)
+            .catch { exception ->
+                handleError("Failed to load events", exception)
+                emit(emptyList())
+            }.shareIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                replay = 1,
+            )
+
     @OptIn(FlowPreview::class)
-    val uiState = combine(
-        _uiState,
-        users,
-        holidays,
-        calendars,
-        events
-    ) { currentState, usersList, holidaysList, calendarsList, eventsList ->
-        currentState.copy(
-            accounts = usersList,
-            holidays = holidaysList,
-            calendars = calendarsList,
-            events = eventsList,
-            isLoading = false
-        )
-    }
-        .distinctUntilChanged()
-        .debounce(50)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CalendarUiState(isLoading = true)
-        )
+    val uiState =
+        combine(
+            _uiState,
+            users.distinctUntilChanged(),
+            holidays.distinctUntilChanged(),
+            calendars.distinctUntilChanged(),
+            events.distinctUntilChanged(),
+        ) { currentState, usersList, holidaysList, calendarsList, eventsList ->
+            currentState.copy(
+                accounts = usersList,
+                holidays = holidaysList,
+                calendars = calendarsList,
+                events = eventsList,
+                isLoading = false,
+            )
+        }.distinctUntilChanged()
+            .debounce(30)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = CalendarUiState(isLoading = true),
+            )
 
     init {
         initializeData()
@@ -139,14 +151,15 @@ class CalendarViewModel(
         if (_isInitialized.compareAndSet(expectedValue = false, newValue = true)) {
             viewModelScope.launch {
                 try {
-                    val initJobs = listOf(
-                        async {
-                            initializeUsers()
-                            initializeCalendars()
-                            initializeEvents()
-                        },
-                        async { initializeHolidays() },
-                    )
+                    val initJobs =
+                        listOf(
+                            async {
+                                initializeUsers()
+                                initializeCalendars()
+                                initializeEvents()
+                            },
+                            async { initializeHolidays() },
+                        )
 
                     initJobs.awaitAll()
                 } catch (exception: Exception) {
@@ -204,9 +217,10 @@ class CalendarViewModel(
         viewModelScope.launch {
             runCatching {
                 updateState { currentState ->
-                    val updatedCalendars = currentState.calendars.map { cal ->
-                        if (cal.id == calendar.id) updatedCalendar else cal
-                    }
+                    val updatedCalendars =
+                        currentState.calendars.map { cal ->
+                            if (cal.id == calendar.id) updatedCalendar else cal
+                        }
                     currentState.copy(calendars = updatedCalendars)
                 }
             }.onFailure { exception ->
@@ -237,9 +251,10 @@ class CalendarViewModel(
         performEventOperation(
             operation = { eventRepository.updateEvent(event) },
             onSuccess = { currentState ->
-                val updatedEvents = currentState.events.map { e ->
-                    if (e.id == event.id) event else e
-                }
+                val updatedEvents =
+                    currentState.events.map { e ->
+                        if (e.id == event.id) event else e
+                    }
                 currentState.copy(
                     events = updatedEvents,
                     selectedEvent = null
@@ -262,6 +277,7 @@ class CalendarViewModel(
             errorMessage = "Failed to delete event"
         )
     }
+
     private fun performEventOperation(
         operation: suspend () -> Unit,
         onSuccess: (CalendarUiState) -> CalendarUiState,

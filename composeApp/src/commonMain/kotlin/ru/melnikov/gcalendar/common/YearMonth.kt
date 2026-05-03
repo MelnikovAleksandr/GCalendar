@@ -1,9 +1,11 @@
 package ru.melnikov.gcalendar.common
 
+import androidx.compose.runtime.Immutable
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.number
 
+@Immutable
 data class YearMonth(val year: Int, val month: Month) {
 
     constructor(year: Int, monthNumber: Int) : this(

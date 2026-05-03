@@ -3,8 +3,11 @@ package ru.melnikov.gcalendar.ui.screen.month
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.datetime.LocalDate
 import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
@@ -17,24 +20,33 @@ fun MonthScreen(
     dateStateHolder: DateStateHolder,
     events: () -> List<Event>,
     holidays: () -> List<Holiday>,
-    onDateClick: () -> Unit
+    onDateClick: () -> Unit,
 ) {
     val dateState by dateStateHolder.currentDateState.collectAsState()
+
+    val onSpecificDayClicked = remember(dateStateHolder, onDateClick) {
+        { date: LocalDate ->
+            dateStateHolder.updateSelectedDateState(date)
+            onDateClick()
+        }
+    }
+
+    val onMonthChange = remember(dateStateHolder) {
+        { yearMonth: YearMonth ->
+            dateStateHolder.updateSelectedInViewMonthState(yearMonth)
+        }
+    }
+
     SwipeableMonthView(
-        modifier = modifier,
+        modifier = modifier.testTag("SwipeableMonthView"),
         currentMonth = YearMonth(
             dateState.selectedInViewMonth.year,
             dateState.selectedInViewMonth.month
         ),
         events = events,
         holidays = holidays,
-        onSpecificDayClicked = { date ->
-            dateStateHolder.updateSelectedDateState(date)
-            onDateClick()
-        },
-        onMonthChange = { yearMonth ->
-            dateStateHolder.updateSelectedInViewMonthState(yearMonth)
-        }
+        onSpecificDayClicked = onSpecificDayClicked,
+        onMonthChange = onMonthChange
     )
 }
 
