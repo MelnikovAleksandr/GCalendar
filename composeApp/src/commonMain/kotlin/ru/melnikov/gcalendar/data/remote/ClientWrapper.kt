@@ -29,7 +29,8 @@ class ClientWrapper(val networkClient: HttpClient) {
             return Result.Error(DataError.Network.NO_INTERNET)
         } catch (_: SerializationException) {
             return Result.Error(DataError.Network.SERIALIZATION)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            print("networkGetUseCase Error - $e ${e.message}")
             return Result.Error(DataError.Network.UNKNOWN)
         }
         return when (response.status.value) {

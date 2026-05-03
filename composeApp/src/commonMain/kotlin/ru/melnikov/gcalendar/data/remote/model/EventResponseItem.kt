@@ -2,14 +2,15 @@ package ru.melnikov.gcalendar.data.remote.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ru.melnikov.gcalendar.domain.model.Event
 
 @Serializable
 data class EventResponseItem(
     @SerialName("calendarId")
     val calendarId: String,
+    @SerialName("calenderName")
+    val calenderName: String,
     @SerialName("description")
-    val description: String,
+    val description: String? = null,
     @SerialName("endTime")
     val endTime: Long,
     @SerialName("id")
@@ -19,9 +20,9 @@ data class EventResponseItem(
     @SerialName("isRecurring")
     val isRecurring: Boolean,
     @SerialName("location")
-    val location: String,
+    val location: String? = null,
     @SerialName("recurringRule")
-    val recurringRule: String,
+    val recurringRule: String? = null,
     @SerialName("reminderMinutes")
     val reminderMinutes: List<Int>,
     @SerialName("startTime")
@@ -29,19 +30,3 @@ data class EventResponseItem(
     @SerialName("title")
     val title: String
 )
-
-fun EventResponseItem.asEvent(): Event {
-    return Event(
-        id = id,
-        title = title,
-        description = description,
-        location = location,
-        startTime = startTime,
-        endTime = endTime,
-        isAllDay = isAllDay,
-        isRecurring = isRecurring,
-        recurringRule = recurringRule,
-        reminderMinutes = reminderMinutes,
-        calendarId = calendarId
-    )
-}

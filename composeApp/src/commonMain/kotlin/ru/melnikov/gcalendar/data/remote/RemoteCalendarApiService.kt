@@ -13,7 +13,7 @@ class RemoteCalendarApiService(client: HttpClient) {
     suspend fun fetchCalendarsForUser(userId: String): Result<List<CalendarResponseItem>,
             DataError> {
         return clientWrapper.networkGetUseCase<List<CalendarResponseItem>>(
-            baseUrl+"assets/calendars.json",
+            baseUrl + "assets/calendars.json",
             mapOf(
                 "user_id" to userId
             )
@@ -21,14 +21,14 @@ class RemoteCalendarApiService(client: HttpClient) {
     }
 
     suspend fun fetchEventsForCalendar(
-        calendarId: String,
+        calendarIds: List<String>,
         startTime: Long,
         endTime: Long
     ): Result<List<EventResponseItem>, DataError> {
         return clientWrapper.networkGetUseCase<List<EventResponseItem>>(
             baseUrl + "assets/events.json",
             mapOf(
-                "calendar_id" to calendarId,
+                "calendar_ids" to calendarIds.toString(),
                 "start_time" to startTime.toString(),
                 "end_time" to endTime.toString()
             )

@@ -3,12 +3,9 @@ package ru.melnikov.gcalendar.data.remote.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import ru.melnikov.gcalendar.domain.model.Calendar
 
 @Serializable
 data class CalendarResponseItem(
-    @SerialName("color")
-    val color: Int,
     @SerialName("id")
     val id: String,
     @SerialName("isPrimary")
@@ -20,14 +17,3 @@ data class CalendarResponseItem(
     @SerialName("userId")
     val userId: String
 )
-
-fun CalendarResponseItem.asCalendar(): Calendar {
-    return Calendar(
-        id = id,
-        name = name,
-        color = color,
-        isVisible = isVisible,
-        isPrimary = isPrimary,
-        userId = userId
-    )
-}

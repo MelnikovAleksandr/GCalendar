@@ -9,13 +9,27 @@ import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.koin.core.annotation.Single
+import ru.melnikov.gcalendar.common.asHoliday
 import ru.melnikov.gcalendar.data.local.HolidayDao
-import ru.melnikov.gcalendar.data.local.model.HolidayEntity
+import ru.melnikov.gcalendar.data.remote.HolidayApiService
+import ru.melnikov.gcalendar.data.remote.Result
 import ru.melnikov.gcalendar.domain.model.Holiday
 import kotlin.time.ExperimentalTime
 
 @Single
-class HolidayRepository(private val holidayDao: HolidayDao) {
+class HolidayRepository(
+    private val holidayDao: HolidayDao,
+    private val holidayApiService: HolidayApiService,
+) {
+    suspend fun updateHolidays(countryCode: String, year: Int){
+        when (val response = holidayApiService.getHolidays(countryCode, year)) {
+            is Result.Error -> {
+                println("Error updateHolidays " + response.error.toString())
+            }
+
+            is Result.Success -> {}
+        }
+    }
     fun getHolidaysForYear(countryCode: String, year: Int): Flow<List<Holiday>> {
 
         val startDateTime = LocalDateTime(
@@ -46,20 +60,7 @@ class HolidayRepository(private val holidayDao: HolidayDao) {
         val endDate = endInstant.toEpochMilliseconds()
 
         return holidayDao.getHolidaysInRange(startDate, endDate).map { entities ->
-            entities
-                .filter { it.countryCode == countryCode }
-                .map { it.toHoliday() }
+            entities.filter { it.countryCode == countryCode.lowercase() }.map { it.asHoliday() }
         }
     }
-
-    suspend fun addHolidays(holidays: List<Holiday>) {
-        val entities = holidays.map { it.toEntity() }
-        holidayDao.insertHolidays(entities)
-    }
-
-    private fun HolidayEntity.toHoliday(): Holiday =
-        Holiday(id, name, date, countryCode)
-
-    private fun Holiday.toEntity(): HolidayEntity =
-        HolidayEntity(id, name, date, countryCode)
 }
