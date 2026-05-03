@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
@@ -38,8 +40,8 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 internal fun BaseCalendarScreen(
     modifier: Modifier = Modifier,
     dateStateHolder: DateStateHolder,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    events: ImmutableList<Event>,
+    holidays: ImmutableList<Holiday>,
     onEventClick: (Event) -> Unit,
     onDateClickCallback: () -> Unit,
     numDays: Int,
@@ -78,7 +80,9 @@ internal fun BaseCalendarScreen(
                         verticalArrangement = Arrangement.Top,
                     ) {
                         Text(
-                            text = dateState.selectedDate.dayOfWeek.name.take(3),
+                            text =
+                                dateState.selectedDate.dayOfWeek.name
+                                    .take(3),
                             style = GCalendarTheme.typography.labelSmall,
                             color =
                                 when {
@@ -148,8 +152,8 @@ internal fun BaseCalendarScreen(
 fun BaseCalendarScreenPreview() {
     GCalendarTheme {
         BaseCalendarScreen(
-            events = emptyList(),
-            holidays = emptyList(),
+            events = listOf<Event>().toImmutableList(),
+            holidays = listOf<Holiday>().toImmutableList(),
             dateStateHolder = DateStateHolder(),
             onEventClick = {},
             numDays = 3,

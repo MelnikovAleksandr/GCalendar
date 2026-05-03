@@ -56,7 +56,6 @@ import androidx.compose.ui.unit.sp
 import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.Bars
 import compose.icons.fontawesomeicons.solid.CaretDown
 import compose.icons.fontawesomeicons.solid.Search
 import kotlinx.datetime.LocalDate
@@ -78,8 +77,8 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun CalendarTopAppBar(
+    modifier: Modifier = Modifier,
     dateState: DateState,
-    onMenuClick: () -> Unit,
     onSelectToday: () -> Unit,
     onDayClick: (LocalDate) -> Unit,
     events: List<Event>,
@@ -120,7 +119,7 @@ internal fun CalendarTopAppBar(
 
     Column(
         modifier =
-            Modifier
+            modifier
                 .background(
                     color = GCalendarTheme.colorScheme.surfaceContainerLow,
                 ).animateContentSize(),
@@ -135,15 +134,6 @@ internal fun CalendarTopAppBar(
                     actionIconContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
                     subtitleContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
                 ),
-            navigationIcon = {
-                IconButton(onClick = onMenuClick) {
-                    Icon(
-                        modifier = Modifier.size(16.dp),
-                        imageVector = FontAwesomeIcons.Solid.Bars,
-                        contentDescription = "Menu",
-                    )
-                }
-            },
             title = {
                 Row(
                     modifier =
@@ -422,7 +412,6 @@ fun CalendarTopAppBarPreview() {
                 selectedDate = LocalDate(2025, 12, 12),
                 selectedInViewMonth = YearMonth(2025, 12)
             ),
-            onMenuClick = {},
             onSelectToday = {},
             onDayClick = {},
             events = emptyList(),

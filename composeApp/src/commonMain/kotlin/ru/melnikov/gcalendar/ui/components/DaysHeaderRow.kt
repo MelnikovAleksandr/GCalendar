@@ -33,6 +33,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -46,7 +49,7 @@ internal fun DaysHeaderRow(
     startDate: LocalDate,
     numDays: Int,
     currentDate: LocalDate,
-    holidaysByDate: Map<LocalDate, List<Holiday>>,
+    holidaysByDate: ImmutableMap<LocalDate, ImmutableList<Holiday>>,
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     dynamicHeaderHeightState: MutableState<Int>?,
@@ -71,7 +74,7 @@ internal fun DaysHeaderRow(
         if (numDays > 1) {
             dates.forEach { date ->
                 val isToday = date == currentDate
-                val currentDayHolidays = holidaysByDate[date] ?: emptyList()
+                val currentDayHolidays = holidaysByDate[date] ?: persistentListOf()
 
                 Column(
                     modifier =

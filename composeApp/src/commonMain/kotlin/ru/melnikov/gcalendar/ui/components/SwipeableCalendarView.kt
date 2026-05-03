@@ -9,6 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -21,8 +25,8 @@ import ru.melnikov.gcalendar.domain.model.Holiday
 internal fun SwipeableCalendarView(
     modifier: Modifier = Modifier,
     startDate: LocalDate,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    events: ImmutableList<Event>,
+    holidays: ImmutableList<Holiday>,
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
     onDateRangeChange: (LocalDate) -> Unit,
@@ -31,22 +35,28 @@ internal fun SwipeableCalendarView(
     hourHeightDp: Float = 60f,
     scrollState: ScrollState,
     currentDate: LocalDate,
-    dynamicHeaderHeightState: MutableState<Int>,
+    dynamicHeaderHeightState: MutableState<Int>
 ) {
     require(numDays in 1..31) { "numDays must be between 1 and 31" }
 
     val eventsByDate =
         remember(events) {
-            events.groupBy { event ->
-                event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
-            }
+            events
+                .groupBy { event ->
+                    event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                }.mapValues {
+                    it.value.toImmutableList()
+                }.toImmutableMap()
         }
 
     val holidaysByDate =
         remember(holidays) {
-            holidays.groupBy { holiday ->
-                holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
-            }
+            holidays
+                .groupBy { holiday ->
+                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                }.mapValues {
+                    it.value.toImmutableList()
+                }.toImmutableMap()
         }
 
     SwipeablePager(
@@ -83,8 +93,8 @@ internal fun SwipeableCalendarView(
 private fun CalendarContent(
     startDate: LocalDate,
     numDays: Int,
-    eventsByDate: Map<LocalDate, List<Event>>,
-    holidaysByDate: Map<LocalDate, List<Holiday>>,
+    eventsByDate: ImmutableMap<LocalDate, ImmutableList<Event>>,
+    holidaysByDate: ImmutableMap<LocalDate, ImmutableList<Holiday>>,
     timeRange: IntRange,
     hourHeightDp: Float,
     onDayClick: (LocalDate) -> Unit,
@@ -92,7 +102,7 @@ private fun CalendarContent(
     currentDate: LocalDate,
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
-    dynamicHeaderHeightState: MutableState<Int>?,
+    dynamicHeaderHeightState: MutableState<Int>?
 ) {
     Column(modifier) {
         DaysHeaderRow(

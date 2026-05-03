@@ -35,7 +35,7 @@ data class YearMonth(
     fun getLastDateOrdinal(): Int =
         when (month) {
             Month.JANUARY -> 31
-            Month.FEBRUARY -> if (year % 4 == 0) 29 else 28
+            Month.FEBRUARY -> if (year.isLeap()) 29 else 28
             Month.MARCH -> 31
             Month.APRIL -> 30
             Month.MAY -> 31

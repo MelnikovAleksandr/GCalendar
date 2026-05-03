@@ -81,6 +81,8 @@ kotlin {
             implementation(libs.androidx.adaptive)
             implementation(libs.androidx.adaptive.layout)
             implementation(libs.androidx.adaptive.navigation)
+
+            implementation(libs.navigation3.viewmodel)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

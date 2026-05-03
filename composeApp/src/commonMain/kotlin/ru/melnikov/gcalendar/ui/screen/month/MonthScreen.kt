@@ -1,6 +1,5 @@
 package ru.melnikov.gcalendar.ui.screen.month
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -8,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
 import ru.melnikov.gcalendar.common.YearMonth
@@ -39,13 +39,7 @@ fun MonthScreen(
     val onMonthChange =
         remember(dateStateHolder) {
             { yearMonth: YearMonth ->
-                dateStateHolder.updateSelectedDateState(
-                    LocalDate(
-                        yearMonth.year,
-                        yearMonth.month,
-                        yearMonth.getLastDateOrdinal(),
-                    ),
-                )
+                dateStateHolder.updateSelectedInViewMonthState(yearMonth)
             }
         }
 
@@ -75,13 +69,10 @@ fun MonthScreen(
             }
 
         MonthView(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .testTag("MonthView_$month"),
+            modifier = Modifier.testTag("MonthView_$month"),
             month = month,
-            events = monthEvents,
-            holidays = monthHolidays,
+            events = monthEvents.toImmutableList(),
+            holidays = monthHolidays.toImmutableList(),
             onDayClick = onSpecificDayClicked,
         )
     }

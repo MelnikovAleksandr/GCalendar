@@ -25,6 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -41,7 +44,7 @@ import kotlin.time.ExperimentalTime
 internal fun CalendarEventsGrid(
     startDate: LocalDate,
     numDays: Int,
-    eventsByDate: Map<LocalDate, List<Event>>,
+    eventsByDate: ImmutableMap<LocalDate, ImmutableList<Event>>,
     timeRange: IntRange,
     hourHeightDp: Float,
     onEventClick: (Event) -> Unit,
@@ -71,7 +74,7 @@ internal fun CalendarEventsGrid(
                         .fillMaxWidth()
                         .height(hourHeightDp.dp),
                 ) {
-                    repeat(numDays) {
+                    repeat(numDays) { _ ->
                         Box(
                             Modifier
                                 .weight(1f)
@@ -106,7 +109,7 @@ internal fun CalendarEventsGrid(
         }
 
         dates.forEachIndexed { dayIndex, date ->
-            val dayEvents = eventsByDate[date] ?: emptyList()
+            val dayEvents = eventsByDate[date] ?: persistentListOf()
 
             val eventGroups = remember(dayEvents) { groupOverlappingEvents(dayEvents) }
 
@@ -116,7 +119,8 @@ internal fun CalendarEventsGrid(
                 group.forEachIndexed { _, event ->
                     val eventStart =
                         event.startTime.toLocalDateTime(TimeZone.currentSystemDefault())
-                    val eventEnd = event.endTime.toLocalDateTime(TimeZone.currentSystemDefault())
+                    val eventEnd =
+                        event.endTime.toLocalDateTime(TimeZone.currentSystemDefault())
                     val hour = eventStart.hour
                     val minute = eventStart.minute
 

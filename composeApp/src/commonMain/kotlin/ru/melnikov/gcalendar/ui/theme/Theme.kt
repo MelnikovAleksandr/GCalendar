@@ -1,5 +1,7 @@
 package ru.melnikov.gcalendar.ui.theme
 
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -11,8 +13,14 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.rememberDynamicColorScheme
+
+val LocalSharedTransitionScope =
+    compositionLocalOf<SharedTransitionScope> {
+        throw IllegalStateException("No SharedTransitionScope provided")
+    }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -33,7 +41,13 @@ fun GCalendarTheme(
             colorScheme = colorScheme,
             typography = typography,
             shapes = shapes,
-            content = content,
+            content = {
+                SharedTransitionLayout {
+                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                        content()
+                    }
+                }
+            },
             motionScheme = MotionScheme.expressive(),
         )
     }

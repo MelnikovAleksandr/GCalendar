@@ -2,7 +2,6 @@ package ru.melnikov.gcalendar.ui.screen.month.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -12,6 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -24,12 +28,13 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
+
 @Composable
 fun MonthView(
     modifier: Modifier,
     month: YearMonth,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    events: ImmutableList<Event>,
+    holidays: ImmutableList<Holiday>,
     onDayClick: (LocalDate) -> Unit,
 ) {
     val firstDayOfMonth = LocalDate(month.year, month.month, 1)
@@ -42,70 +47,106 @@ fun MonthView(
 
     val eventsByDate =
         remember(month.year, month.month, events) {
-            events.groupBy { event ->
-                event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
-            }
+            events
+                .groupBy { event ->
+                    event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                }.mapValues {
+                    it.value.toImmutableList()
+                }.toImmutableMap()
         }
 
     val holidaysByDate =
         remember(month.year, month.month, holidays) {
-            holidays.groupBy { holiday ->
-                holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
-            }
+            holidays
+                .groupBy { holiday ->
+                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                }.mapValues {
+                    it.value.toImmutableList()
+                }.toImmutableMap()
         }
 
-    val prevMonth = if (month.month.number == 1) Month(12) else Month(month.month.number - 1)
-    val prevYear = if (month.month.number == 1) month.year - 1 else month.year
-    val daysInPrevMonth = prevMonth.lengthOfMonth(prevYear.isLeap())
-    val nextMonth = if (month.month.number == 12) Month(1) else Month(month.month.number + 1)
-    val nextYear = if (month.month.number == 12) month.year + 1 else month.year
+    val (prevMonth, prevYear, daysInPrevMonth, nextMonth, nextYear) =
+        remember(month) {
+            val pm = if (month.month.number == 1) Month(12) else Month(month.month.number - 1)
+            val py = if (month.month.number == 1) month.year - 1 else month.year
+            val dpm = pm.lengthOfMonth(py.isLeap())
+            val nm = if (month.month.number == 12) Month(1) else Month(month.month.number + 1)
+            val ny = if (month.month.number == 12) month.year + 1 else month.year
+            MonthCalculations(pm, py, dpm, nm, ny)
+        }
+
     val gridState = rememberLazyGridState()
 
-    BoxWithConstraints {
-        val itemSize = DpSize(maxWidth / 7, maxHeight / 6)
+    BoxWithConstraints(
+        propagateMinConstraints = true,
+    ) {
+        val itemSize =
+            remember(maxWidth, maxHeight) {
+                DpSize(
+                    maxWidth.div(7),
+                    (maxHeight - 50.dp).div(6),
+                )
+            }
+
         LazyVerticalGrid(
-            modifier = modifier
-                .fillMaxSize()
-                .background(color = GCalendarTheme.colorScheme.surfaceContainerLow),
+            modifier = modifier.background(color = GCalendarTheme.colorScheme.surfaceContainerLow),
             state = gridState,
             columns = GridCells.Fixed(7),
             userScrollEnabled = false,
         ) {
-            item(span = { GridItemSpan(7) }) {
+            item(
+                key = "weekday_header",
+                span = { GridItemSpan(7) },
+            ) {
                 WeekdayHeader()
             }
+
             if (firstDayOfWeek > 0 && !skipPreviousPadding) {
-                items(key = { day -> "prev_$day" }, count = firstDayOfWeek) { index ->
+                items(
+                    count = firstDayOfWeek,
+                    key = { index ->
+                        val ordinal = daysInPrevMonth - (firstDayOfWeek - index - 1)
+                        "prev_${prevYear}_${prevMonth.number}_$ordinal"
+                    },
+                ) { index ->
                     val ordinal = daysInPrevMonth - (firstDayOfWeek - index - 1)
                     val date = LocalDate(prevYear, prevMonth, ordinal)
                     DayCell(
                         modifier = Modifier,
                         date = date,
-                        events = eventsByDate[date] ?: emptyList(),
-                        holidays = holidaysByDate[date] ?: emptyList(),
+                        events = eventsByDate[date] ?: persistentListOf(),
+                        holidays = holidaysByDate[date] ?: persistentListOf(),
                         isCurrentMonth = false,
                         onDayClick = onDayClick,
                         itemSize = itemSize,
                         isTopLeft = index == 0,
                         isTopRight = index == 6,
-                        isBottomLeft = index == 35,
-                        isBottomRight = index == 41,
+                        isBottomLeft = false,
+                        isBottomRight = false,
                     )
                 }
             }
 
-            items(key = { day -> "current_$day" }, count = daysInMonth) { day ->
+            items(
+                count = daysInMonth,
+                key = { day -> "current_${month.year}_${month.month.number}_${day + 1}" },
+            ) { day ->
                 val date = LocalDate(month.year, month.month, day + 1)
                 val currentMonthStartIndex = if (skipPreviousPadding) 0 else firstDayOfWeek
                 val cellIndex = currentMonthStartIndex + day
                 DayCell(
                     modifier = Modifier,
                     date = date,
-                    events = eventsByDate[date] ?: emptyList(),
-                    holidays = holidaysByDate[date] ?: emptyList(),
+                    events = eventsByDate[date] ?: persistentListOf(),
+                    holidays = holidaysByDate[date] ?: persistentListOf(),
                     isCurrentMonth = true,
                     onDayClick = onDayClick,
-                    itemSize = itemSize,
+                    itemSize =
+                        if (cellIndex >= 35) {
+                            itemSize.copy(height = itemSize.height + 70.dp)
+                        } else {
+                            itemSize
+                        },
                     isTopLeft = cellIndex == 0,
                     isTopRight = cellIndex == 6,
                     isBottomLeft = cellIndex == 35,
@@ -113,27 +154,43 @@ fun MonthView(
                 )
             }
 
-            items(key = { day -> "next_$day" }, count = remainingCells) { day ->
+            items(
+                count = remainingCells,
+                key = { day -> "next_${nextYear}_${nextMonth.number}_${day + 1}" },
+            ) { day ->
                 val date = LocalDate(nextYear, nextMonth, day + 1)
                 val cellIndex = totalDaysDisplayed + day
 
                 DayCell(
                     modifier = Modifier,
                     date = date,
-                    events = eventsByDate[date] ?: emptyList(),
-                    holidays = holidaysByDate[date] ?: emptyList(),
+                    events = eventsByDate[date] ?: persistentListOf(),
+                    holidays = holidaysByDate[date] ?: persistentListOf(),
                     isCurrentMonth = false,
                     onDayClick = onDayClick,
-                    itemSize = itemSize,
-                    isTopLeft = cellIndex == 0,
-                    isTopRight = cellIndex == 6,
-                    isBottomLeft = cellIndex == 35,
-                    isBottomRight = cellIndex == 41,
+                    itemSize =
+                        if (cellIndex >= 35) {
+                            itemSize.copy(height = itemSize.height + 70.dp)
+                        } else {
+                            itemSize
+                        },
+                    isTopLeft = false,
+                    isTopRight = false,
+                    isBottomLeft = false,
+                    isBottomRight = false,
                 )
             }
         }
     }
 }
+
+private data class MonthCalculations(
+    val prevMonth: Month,
+    val prevYear: Int,
+    val daysInPrevMonth: Int,
+    val nextMonth: Month,
+    val nextYear: Int,
+)
 
 @Preview
 @Composable
@@ -142,8 +199,8 @@ fun MonthViewPreview() {
         MonthView(
             modifier = Modifier,
             month = YearMonth(2025, 12),
-            events = emptyList(),
-            holidays = emptyList(),
+            events = listOf<Event>().toImmutableList(),
+            holidays = listOf<Holiday>().toImmutableList(),
             onDayClick = {}
         )
     }
