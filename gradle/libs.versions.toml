@@ -22,8 +22,10 @@ kotlinx-datetime = "0.7.1"
 compose-material-icons = "1.7.3"
 composeIcons = "1.1.1"
 materialKolor = "4.1.1"
-config = "0.17.1"
+config = "0.18.0"
 store = "5.1.0-alpha08"
+adaptive = "1.2.0"
+core = "1.0.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -61,6 +63,8 @@ room-runtime-android = { group = "androidx.room", name = "room-runtime-android",
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room_version" }
 sqlite-bundled = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqlite" }
 store = { module = "org.mobilenativefoundation.store:store5", version.ref = "store" }
+material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
+androidx-core = { module = "androidx.window.extensions.core:core", version.ref = "core" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

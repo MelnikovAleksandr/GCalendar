@@ -76,6 +76,7 @@ kotlin {
             implementation(libs.materialKolor)
 
             implementation(libs.store)
+            implementation(libs.material3.adaptive)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
