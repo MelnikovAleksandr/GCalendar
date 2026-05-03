@@ -10,6 +10,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.common.asHoliday
+import ru.melnikov.gcalendar.common.asHolidayEntity
 import ru.melnikov.gcalendar.data.local.HolidayDao
 import ru.melnikov.gcalendar.data.remote.HolidayApiService
 import ru.melnikov.gcalendar.data.remote.Result
@@ -27,7 +28,10 @@ class HolidayRepository(
                 println("Error updateHolidays " + response.error.toString())
             }
 
-            is Result.Success -> {}
+            is Result.Success -> {
+                val remoteHolidays = response.data.response.holidays.map { it.asHoliday() }
+                holidayDao.insertHolidays(remoteHolidays.map { it.asHolidayEntity() })
+            }
         }
     }
     fun getHolidaysForYear(countryCode: String, year: Int): Flow<List<Holiday>> {

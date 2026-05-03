@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.datetime.LocalDate
@@ -23,9 +24,9 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 fun MonthView(
     modifier: Modifier,
     month: YearMonth,
-    events: List<Event>,
-    holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit
+    events: () -> List<Event>,
+    holidays: () -> List<Holiday>,
+    onDayClick: (LocalDate) -> Unit,
 ) {
     val firstDayOfMonth = LocalDate(month.year, month.month, 1)
     val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
@@ -34,6 +35,20 @@ fun MonthView(
     val skipPreviousPadding = firstDayOfWeek >= 7
     val totalDaysDisplayed = if (skipPreviousPadding) daysInMonth else firstDayOfWeek + daysInMonth
     val remainingCells = 42 - totalDaysDisplayed
+
+    val eventsByDate = remember(month, events) {
+        val allEvents = events()
+        allEvents.groupBy { event ->
+            event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+    }
+
+    val holidaysByDate = remember(month, holidays) {
+        val allHolidays = holidays()
+        allHolidays.groupBy { holiday ->
+            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+    }
 
     LazyVerticalGrid(
         modifier = modifier.fillMaxSize(),
@@ -55,12 +70,8 @@ fun MonthView(
                 DayCell(
                     modifier = Modifier,
                     date = date,
-                    events = events.filter { event ->
-                        event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                    },
-                    holidays = holidays.filter { holiday ->
-                        holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                    },
+                    events = eventsByDate[date] ?: emptyList(),
+                    holidays = holidaysByDate[date] ?: emptyList(),
                     isCurrentMonth = false,
                     onDayClick = onDayClick
                 )
@@ -72,12 +83,8 @@ fun MonthView(
             DayCell(
                 modifier = Modifier,
                 date = date,
-                events = events.filter { event ->
-                    event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
-                holidays = holidays.filter { holiday ->
-                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
+                events = eventsByDate[date] ?: emptyList(),
+                holidays = holidaysByDate[date] ?: emptyList(),
                 isCurrentMonth = true,
                 onDayClick = onDayClick
             )
@@ -92,12 +99,8 @@ fun MonthView(
             DayCell(
                 modifier = Modifier,
                 date = date,
-                events = events.filter { event ->
-                    event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
-                holidays = holidays.filter { holiday ->
-                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
+                events = eventsByDate[date] ?: emptyList(),
+                holidays = holidaysByDate[date] ?: emptyList(),
                 isCurrentMonth = false,
                 onDayClick = onDayClick
             )
@@ -112,8 +115,8 @@ fun MonthViewPreview() {
         MonthView(
             modifier = Modifier,
             month = YearMonth(2025, 12),
-            events = emptyList(),
-            holidays = emptyList(),
+            events = { emptyList() },
+            holidays = { emptyList() },
             onDayClick = {}
         )
     }

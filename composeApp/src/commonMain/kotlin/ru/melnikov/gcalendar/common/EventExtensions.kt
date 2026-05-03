@@ -17,8 +17,8 @@ fun EventResponseItem.asEvent(): Event {
         recurringRule = recurringRule,
         reminderMinutes = reminderMinutes,
         calendarId = calendarId,
-        calendarName = calendarName,
-        color = stringToColor(calendarId)
+        calendarName = calendarName ?: "",
+        color = convertStringToColor(calendarId + calendarName)
     )
 }
 
@@ -36,7 +36,7 @@ fun EventEntity.asEvent(): Event {
         recurringRule = recurringRule,
         reminderMinutes = emptyList(),
         calendarName = calendarName,
-        color = stringToColor(calendarId)
+        color = convertStringToColor(calendarId + calendarName)
     )
 }
 

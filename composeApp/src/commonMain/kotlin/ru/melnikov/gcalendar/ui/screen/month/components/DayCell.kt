@@ -35,6 +35,7 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun DayCell(
     modifier: Modifier,
@@ -85,38 +86,40 @@ fun DayCell(
                 textAlign = TextAlign.Center
             )
         }
-
-        item {
-            Spacer(modifier = Modifier.height(2.dp))
-            holidays.forEach { holiday ->
+        if(holidays.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(2.dp))
+                holidays.forEach { holiday ->
+                    EventTag(
+                        modifier = Modifier.padding(bottom = 2.dp),
+                        text = holiday.name,
+                        color = Color(0xFF007F73),
+                        textColor = GCalendarTheme.colorScheme.inverseOnSurface
+                    )
+                }
+            }
+        }
+        if(displayedEvents.isNotEmpty()) {
+            items(displayedEvents) { event ->
+                Spacer(modifier = Modifier.height(2.dp))
                 EventTag(
-                    modifier = Modifier.padding(bottom = 2.dp),
-                    text = holiday.name,
-                    color = Color(0xFF7eff73),
+                    text = event.title,
+                    color = Color(event.color),
                     textColor = GCalendarTheme.colorScheme.inverseOnSurface
                 )
             }
-        }
 
-        items(displayedEvents){ event ->
-            Spacer(modifier = Modifier.height(2.dp))
-            EventTag(
-                text = event.title,
-                color = Color(event.color),
-                textColor = GCalendarTheme.colorScheme.inverseOnSurface
-            )
-        }
-
-        if (events.size > maxEventsToShow) {
-            item {
-                Text(
-                    text = "+${events.size - maxEventsToShow} more",
-                    style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 2.dp, top = 1.dp)
-                )
+            if (events.size > maxEventsToShow) {
+                item {
+                    Text(
+                        text = "+${events.size - maxEventsToShow} more",
+                        style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 2.dp, top = 1.dp)
+                    )
+                }
             }
         }
     }

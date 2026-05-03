@@ -5,7 +5,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.datetime.LocalDate
 import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
@@ -16,9 +15,9 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 fun MonthScreen(
     modifier: Modifier = Modifier,
     dateStateHolder: DateStateHolder,
-    events: List<Event>,
-    holidays: List<Holiday>,
-    onDateClick: (LocalDate) -> Unit
+    events: () -> List<Event>,
+    holidays: () -> List<Holiday>,
+    onDateClick: () -> Unit
 ) {
     val dateState by dateStateHolder.currentDateState.collectAsState()
     SwipeableMonthView(
@@ -31,7 +30,7 @@ fun MonthScreen(
         holidays = holidays,
         onSpecificDayClicked = { date ->
             dateStateHolder.updateSelectedDateState(date)
-            onDateClick(date)
+            onDateClick()
         },
         onMonthChange = { yearMonth ->
             dateStateHolder.updateSelectedInViewMonthState(yearMonth)
@@ -46,8 +45,8 @@ fun MonthScreenPreview() {
         MonthScreen(
             modifier = Modifier,
             dateStateHolder = DateStateHolder(),
-            events = emptyList(),
-            holidays = emptyList(),
+            events = { emptyList() },
+            holidays = { emptyList() },
             onDateClick = {}
         )
     }

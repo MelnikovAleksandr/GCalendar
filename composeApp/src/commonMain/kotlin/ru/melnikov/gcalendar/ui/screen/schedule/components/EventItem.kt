@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -23,12 +24,15 @@ fun EventItem(
     onClick: () -> Unit,
     timeText: String? = null
 ) {
+    val backgroundColor = remember(color) { color.copy(alpha = 0.15f) }
+    val timeTextColor = remember(color) { color.copy(alpha = 0.7f) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
             .clickable(onClick = onClick),
-        color = color.copy(alpha = 0.15f),
+        color = backgroundColor,
         shape = RoundedCornerShape(4.dp)
     ) {
         Column(
@@ -45,7 +49,7 @@ fun EventItem(
                 Text(
                     text = it,
                     style = GCalendarTheme.typography.labelSmall,
-                    color = color.copy(alpha = 0.7f),
+                    color = timeTextColor,
                     fontSize = 12.sp
                 )
             }

@@ -1,5 +1,8 @@
 package ru.melnikov.gcalendar.domain.model
 
+import androidx.compose.runtime.Stable
+
+@Stable
 data class Event(
     val id: String,
     val calendarId: String,

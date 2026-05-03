@@ -19,8 +19,11 @@ class ScheduleStateHolder(
     private val _items = mutableStateListOf<ScheduleItem>()
     val items: List<ScheduleItem> = _items
 
-    private val monthRange = ScheduleState(initialMonth)
+    private val monthRange = ScheduleState(initialMonth, initialRange = 3)
     val initialScrollIndex: Int
+
+    private val eventCache = mutableMapOf<LocalDate, List<Event>>()
+    private val holidayCache = mutableMapOf<LocalDate, List<Holiday>>()
 
     init {
         val initialItems = createScheduleItemsForMonthRange(
@@ -67,12 +70,22 @@ class ScheduleStateHolder(
         allHolidays: List<Holiday>
     ): List<ScheduleItem> {
         val items = mutableListOf<ScheduleItem>()
+
+        val eventDateMap = allEvents.groupBy { event ->
+            event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+
+        val holidayDateMap = allHolidays.groupBy { holiday ->
+            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+
         fun calculateDaysInMonth(yearMonth: YearMonth): List<LocalDate> {
             val daysInMonth = yearMonth.month.lengthOfMonth(yearMonth.year.isLeap())
             return (1..daysInMonth).map { day ->
                 LocalDate(yearMonth.year, yearMonth.month, day)
             }
         }
+
         months.forEach { yearMonth ->
             items.add(ScheduleItem.MonthHeader(yearMonth))
 
@@ -84,16 +97,14 @@ class ScheduleStateHolder(
                 if (week.isNotEmpty()) {
                     val firstDay = week.first()
                     val lastDay = week.last()
-
                     items.add(ScheduleItem.WeekHeader(firstDay, lastDay))
-
                     week.forEach { date ->
-                        val dayEvents = allEvents.filter { event ->
-                            event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                        val dayEvents = eventCache.getOrPut(date) {
+                            eventDateMap[date] ?: emptyList()
                         }
 
-                        val dayHolidays = allHolidays.filter { holiday ->
-                            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                        val dayHolidays = holidayCache.getOrPut(date) {
+                            holidayDateMap[date] ?: emptyList()
                         }
 
                         if (dayEvents.isNotEmpty() || dayHolidays.isNotEmpty()) {

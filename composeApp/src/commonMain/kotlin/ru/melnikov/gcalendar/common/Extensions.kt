@@ -125,14 +125,17 @@ fun Int.isLeap(): Boolean {
     return (this % 4 == 0 && this % 100 != 0) || (this % 400 == 0)
 }
 
-fun stringToColor(string: String, alpha: Int = 255): Int {
+fun convertStringToColor(string: String, alpha: Int = 255): Int {
     if (string.isEmpty()) {
-        return 0xFF000000.toInt()
+        return 0xFFF0F0F0.toInt()
     }
+
     val hash = string.hashCode()
-    val r = (abs(hash) % 255)
-    val g = (abs(hash / 7) % 255)
-    val b = (abs(hash / 13) % 255)
+
+    val r = 180 + (abs(hash) % 75)
+    val g = 180 + (abs(hash / 7) % 75)
+    val b = 180 + (abs(hash / 13) % 75)
+
     return ((alpha and 0xFF) shl 24) or
             ((r and 0xFF) shl 16) or
             ((g and 0xFF) shl 8) or

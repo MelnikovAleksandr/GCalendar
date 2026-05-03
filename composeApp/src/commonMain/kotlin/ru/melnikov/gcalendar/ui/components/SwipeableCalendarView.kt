@@ -31,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,7 +84,6 @@ fun SwipeableCalendarView(
     currentDate: LocalDate,
     dynamicHeaderHeightState: MutableState<Int>
 ) {
-
     require(numDays in 1..31) { "numDays must be between 1 and 31" }
 
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -91,22 +91,49 @@ fun SwipeableCalendarView(
     var offsetX by remember { mutableStateOf(0f) }
     var isAnimating by remember { mutableStateOf(false) }
     var targetOffsetX by remember { mutableStateOf(0f) }
-    val prevStartDate = remember(startDate) {
-        startDate.minus(DatePeriod(days = numDays))
+
+    val eventsByDate = remember(events) {
+        events.groupBy { event ->
+            event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
     }
-    val nextStartDate = remember(startDate) {
-        startDate.plus(DatePeriod(days = numDays))
+
+    val holidaysByDate = remember(holidays) {
+        holidays.groupBy { holiday ->
+            holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
+        }
+    }
+
+    val calendarWindow by remember {
+        mutableStateOf(
+            CalendarWindow(
+                previous = startDate.minus(DatePeriod(days = numDays)),
+                current = startDate,
+                next = startDate.plus(DatePeriod(days = numDays))
+            )
+        )
+    }
+
+    val startDateKey = remember(startDate) { startDate.toString() }
+    remember(startDateKey) {
+        if (calendarWindow.current != startDate) {
+            calendarWindow.updateToDate(startDate, numDays)
+        }
     }
 
     val animatedOffset by animateFloatAsState(
         targetValue = targetOffsetX,
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(durationMillis = 250),
         finishedListener = {
             if (isAnimating) {
                 if (targetOffsetX > 0) {
-                    onDateRangeChange(prevStartDate)
+                    val newStartDate = calendarWindow.previous
+                    calendarWindow.updateForPreviousDate(newStartDate, numDays)
+                    onDateRangeChange(newStartDate)
                 } else if (targetOffsetX < 0) {
-                    onDateRangeChange(nextStartDate)
+                    val newStartDate = calendarWindow.next
+                    calendarWindow.updateForNextDate(newStartDate, numDays)
+                    onDateRangeChange(newStartDate)
                 }
                 offsetX = 0f
                 targetOffsetX = 0f
@@ -124,7 +151,7 @@ fun SwipeableCalendarView(
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        val threshold = screenWidth * 0.3f
+                        val threshold = screenWidth * 0.25f
                         if (abs(offsetX) > threshold) {
                             isAnimating = true
                             targetOffsetX = if (offsetX > 0) {
@@ -142,21 +169,21 @@ fun SwipeableCalendarView(
                         targetOffsetX = 0f
                     },
                     onHorizontalDrag = { change, amount ->
-                        targetOffsetX += amount
                         if (!isAnimating) {
-                            offsetX += amount
+                            val newOffsetX = offsetX + amount
+                            offsetX = newOffsetX
+                            targetOffsetX = newOffsetX
                             change.consume()
                         }
                     }
                 )
             }
     ) {
-
         CalendarContent(
-            startDate = startDate,
+            startDate = calendarWindow.current,
             numDays = numDays,
-            events = events,
-            holidays = holidays,
+            eventsByDate = eventsByDate,
+            holidaysByDate = holidaysByDate,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
@@ -172,10 +199,10 @@ fun SwipeableCalendarView(
         )
 
         CalendarContent(
-            startDate = prevStartDate,
+            startDate = calendarWindow.previous,
             numDays = numDays,
-            events = events,
-            holidays = holidays,
+            eventsByDate = eventsByDate,
+            holidaysByDate = holidaysByDate,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
@@ -184,15 +211,20 @@ fun SwipeableCalendarView(
             scrollState = scrollState,
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(-screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) },
+                .offset {
+                    IntOffset(
+                        -screenWidth.roundToInt() + effectiveOffset.roundToInt(),
+                        0
+                    )
+                },
             dynamicHeaderHeightState = null
         )
 
         CalendarContent(
-            startDate = nextStartDate,
+            startDate = calendarWindow.next,
             numDays = numDays,
-            events = events,
-            holidays = holidays,
+            eventsByDate = eventsByDate,
+            holidaysByDate = holidaysByDate,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
@@ -201,7 +233,12 @@ fun SwipeableCalendarView(
             scrollState = scrollState,
             modifier = Modifier
                 .fillMaxSize()
-                .offset { IntOffset(screenWidth.roundToInt() + effectiveOffset.roundToInt(), 0) },
+                .offset {
+                    IntOffset(
+                        screenWidth.roundToInt() + effectiveOffset.roundToInt(),
+                        0
+                    )
+                },
             dynamicHeaderHeightState = null
         )
     }
@@ -211,8 +248,8 @@ fun SwipeableCalendarView(
 private fun CalendarContent(
     startDate: LocalDate,
     numDays: Int,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    eventsByDate: Map<LocalDate, List<Event>>,
+    holidaysByDate: Map<LocalDate, List<Holiday>>,
     timeRange: IntRange,
     hourHeightDp: Float,
     onDayClick: (LocalDate) -> Unit,
@@ -227,7 +264,7 @@ private fun CalendarContent(
             startDate = startDate,
             numDays = numDays,
             currentDate = currentDate,
-            holidays = holidays,
+            holidaysByDate = holidaysByDate,
             onDayClick = onDayClick,
             modifier = Modifier.fillMaxWidth(),
             dynamicHeaderHeightState = dynamicHeaderHeightState
@@ -236,7 +273,7 @@ private fun CalendarContent(
         CalendarEventsGrid(
             startDate = startDate,
             numDays = numDays,
-            events = events,
+            eventsByDate = eventsByDate,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onEventClick = onEventClick,
@@ -251,7 +288,7 @@ private fun DaysHeaderRow(
     startDate: LocalDate,
     numDays: Int,
     currentDate: LocalDate,
-    holidays: List<Holiday>,
+    holidaysByDate: Map<LocalDate, List<Holiday>>,
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     dynamicHeaderHeightState: MutableState<Int>?
@@ -263,6 +300,7 @@ private fun DaysHeaderRow(
         numDays <= 3 -> 3
         else -> 1
     }
+
     Row(
         modifier = modifier
             .background(GCalendarTheme.colorScheme.surfaceContainerHigh)
@@ -277,9 +315,8 @@ private fun DaysHeaderRow(
         if (numDays > 1) {
             dates.forEach { date ->
                 val isToday = date == currentDate
-                val currentDayHolidays = holidays.filter {
-                    it.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                }
+                val currentDayHolidays = holidaysByDate[date] ?: emptyList()
+
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -299,7 +336,7 @@ private fun DaysHeaderRow(
                             width = 1.dp
                         )
                         .clickable { onDayClick(date) },
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = date.dayOfWeek.name.take(dayNameLength),
@@ -325,10 +362,8 @@ private fun DaysHeaderRow(
                                 isToday -> GCalendarTheme.colorScheme.inverseOnSurface
                                 else -> GCalendarTheme.colorScheme.onSurface
                             }
-
                         )
                     }
-
                     if (currentDayHolidays.isNotEmpty()) {
                         Column {
                             currentDayHolidays.take(2).forEach { holiday ->
@@ -341,35 +376,40 @@ private fun DaysHeaderRow(
                                     textColor = GCalendarTheme.colorScheme.inverseOnSurface
                                 )
                             }
+
+                            if (currentDayHolidays.size > 2) {
+                                val extraCount = currentDayHolidays.size - 2
+                                Text(
+                                    text = "+$extraCount more",
+                                    style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                    textAlign = TextAlign.Start,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = GCalendarTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
                         }
-                    }
-                    if (currentDayHolidays.size > 2) {
-                        val extraCount = currentDayHolidays.size - 2
-                        Text(
-                            text = "+$extraCount more",
-                            style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                            textAlign = TextAlign.Start,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = GCalendarTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
-                                .fillMaxWidth()
-                        )
                     }
                 }
             }
         } else {
-            val currentDayHolidays = holidays.filter {
-                it.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == dates.first()
-            }
+            val currentDayHolidays = holidaysByDate[dates.first()] ?: emptyList()
+            var holidaysExpanded by remember { mutableStateOf(false) }
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
             ) {
                 if (currentDayHolidays.isNotEmpty()) {
-                    currentDayHolidays.forEach { holiday ->
+                    val displayHolidays = if (holidaysExpanded) {
+                        currentDayHolidays
+                    } else {
+                        currentDayHolidays.take(2)
+                    }
+                    displayHolidays.forEach { holiday ->
                         Text(
                             text = holiday.name,
                             style = GCalendarTheme.typography.labelMedium,
@@ -377,11 +417,40 @@ private fun DaysHeaderRow(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = GCalendarTheme.colorScheme.inverseOnSurface,
-                            modifier = modifier
+                            modifier = Modifier
                                 .padding(8.dp)
                                 .fillMaxWidth()
                                 .background(Color(0xFF007F73), RoundedCornerShape(2.dp))
                                 .padding(8.dp)
+                        )
+                    }
+
+                    if (currentDayHolidays.size > 2 && !holidaysExpanded) {
+                        val extraCount = currentDayHolidays.size - 2
+                        Text(
+                            text = "+$extraCount more",
+                            style = GCalendarTheme.typography.labelMedium,
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = GCalendarTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .fillMaxWidth()
+                                .clickable { holidaysExpanded = true }
+                        )
+                    } else if (holidaysExpanded && currentDayHolidays.size > 2) {
+                        Text(
+                            text = "Show less",
+                            style = GCalendarTheme.typography.labelMedium,
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = GCalendarTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .fillMaxWidth()
+                                .clickable { holidaysExpanded = false }
                         )
                     }
                 }
@@ -390,11 +459,12 @@ private fun DaysHeaderRow(
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 private fun CalendarEventsGrid(
     startDate: LocalDate,
     numDays: Int,
-    events: List<Event>,
+    eventsByDate: Map<LocalDate, List<Event>>,
     timeRange: IntRange,
     hourHeightDp: Float,
     onEventClick: (Event) -> Unit,
@@ -406,7 +476,9 @@ private fun CalendarEventsGrid(
     }
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
             .background(GCalendarTheme.colorScheme.surfaceContainerLow)
     ) {
         val dayColumnWidth = maxWidth / numDays
@@ -449,67 +521,131 @@ private fun CalendarEventsGrid(
         }
 
         dates.forEachIndexed { dayIndex, date ->
-            val dayEvents = events.filter { event ->
-                event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+            val dayEvents = eventsByDate[date] ?: emptyList()
+
+            val eventGroups = remember(dayEvents) {
+                groupOverlappingEvents(dayEvents)
             }
 
-            dayEvents.forEach { event ->
-                val eventStart = event.startTime.toLocalDateTime(TimeZone.currentSystemDefault())
-                val eventEnd = event.endTime.toLocalDateTime(TimeZone.currentSystemDefault())
+            eventGroups.forEach { (_, group) ->
+                val totalOverlapping = group.size
 
-                val hour = eventStart.hour
-                val minute = eventStart.minute
+                group.forEachIndexed { _, event ->
+                    val eventStart =
+                        event.startTime.toLocalDateTime(TimeZone.currentSystemDefault())
+                    val eventEnd = event.endTime.toLocalDateTime(TimeZone.currentSystemDefault())
 
-                if (hour in timeRange) {
-                    val durationMinutes = if (eventStart.date == eventEnd.date) {
-                        (eventEnd.hour - hour) * 60 + (eventEnd.minute - minute)
-                    } else {
-                        (24 - hour) * 60 - minute
+                    val hour = eventStart.hour
+                    val minute = eventStart.minute
+
+                    if (hour in timeRange) {
+                        val durationMinutes = if (eventStart.date == eventEnd.date) {
+                            (eventEnd.hour - hour) * 60 + (eventEnd.minute - minute)
+                        } else {
+                            (24 - hour) * 60 - minute
+                        }
+
+                        val topOffset =
+                            (hour - timeRange.first) * hourHeightDp + (minute / 60f) * hourHeightDp
+                        val eventHeight = (durationMinutes / 60f) * hourHeightDp
+
+                        EventItem(
+                            event = event,
+                            onClick = { onEventClick(event) },
+                            modifier = Modifier
+                                .offset(
+                                    x = dayColumnWidth * dayIndex,
+                                    y = topOffset.dp
+                                )
+                                .width(dayColumnWidth)
+                                .height(eventHeight.dp.coerceAtLeast(30.dp))
+                                .padding(1.dp),
+                            isOverlapping = totalOverlapping > 1
+                        )
                     }
-
-                    val topOffset =
-                        (hour - timeRange.first) * hourHeightDp + (minute / 60f) * hourHeightDp
-                    val eventHeight = (durationMinutes / 60f) * hourHeightDp
-
-                    EventItem(
-                        event = event,
-                        onClick = { onEventClick(event) },
-                        modifier = Modifier
-                            .offset(
-                                x = dayColumnWidth * dayIndex,
-                                y = topOffset.dp
-                            )
-                            .width(dayColumnWidth)
-                            .height(eventHeight.dp.coerceAtLeast(30.dp))
-                            .padding(1.dp)
-                    )
                 }
             }
         }
     }
 }
 
+private fun groupOverlappingEvents(events: List<Event>): Map<Int, List<Event>> {
+    val sortedEvents = events.sortedBy { it.startTime }
+
+    val groups = mutableMapOf<Int, MutableList<Event>>()
+    var groupId = 0
+
+    sortedEvents.forEach { event ->
+        val eventStart = event.startTime
+        val eventEnd = event.endTime
+
+        val existingGroup = groups.entries.firstOrNull { (_, groupEvents) ->
+            groupEvents.none {
+                (eventStart < it.endTime && eventEnd > it.startTime)
+            }
+        }
+
+        if (existingGroup != null) {
+            existingGroup.value.add(event)
+        } else {
+            groups[groupId] = mutableListOf(event)
+            groupId++
+        }
+    }
+
+    return groups
+}
+
 @Composable
 private fun EventItem(
     event: Event,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isOverlapping: Boolean = false
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(Color(event.color))
+            .border(1.dp, color = Color(event.color))
+            .background(Color(event.color).copy(alpha = if (isOverlapping) 0.7f else 0.9f))
             .clickable(onClick = onClick)
             .padding(4.dp)
     ) {
         Text(
             text = event.title,
             style = GCalendarTheme.typography.labelSmall,
-            color = Color.White,
-            fontSize = 10.sp,
+            color = GCalendarTheme.colorScheme.inverseOnSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Stable
+private class CalendarWindow(
+    previous: LocalDate,
+    current: LocalDate,
+    next: LocalDate
+) {
+    var previous by mutableStateOf(previous)
+    var current by mutableStateOf(current)
+    var next by mutableStateOf(next)
+    fun updateForPreviousDate(newCurrentDate: LocalDate, numDays: Int) {
+        next = current
+        current = previous
+        previous = newCurrentDate.minus(DatePeriod(days = numDays))
+    }
+
+    fun updateForNextDate(newCurrentDate: LocalDate, numDays: Int) {
+        previous = current
+        current = next
+        next = newCurrentDate.plus(DatePeriod(days = numDays))
+    }
+
+    fun updateToDate(targetDate: LocalDate, numDays: Int) {
+        current = targetDate
+        previous = targetDate.minus(DatePeriod(days = numDays))
+        next = targetDate.plus(DatePeriod(days = numDays))
     }
 }
 

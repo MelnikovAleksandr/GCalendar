@@ -2,9 +2,12 @@ package ru.melnikov.gcalendar.domain.states
 
 import ru.melnikov.gcalendar.common.YearMonth
 
-data class ScheduleState(private val startMonth: YearMonth) {
-    private var minOffset = -25
-    private var maxOffset = 25
+data class ScheduleState(
+    private val startMonth: YearMonth,
+    private val initialRange: Int = 25
+) {
+    private var minOffset = -initialRange
+    private var maxOffset = initialRange
     private var lastMinOffset = minOffset
     private var lastMaxOffset = maxOffset
 
@@ -25,7 +28,7 @@ data class ScheduleState(private val startMonth: YearMonth) {
     }
 
     fun getLastAddedMonthsBackward(): List<YearMonth> {
-        return (minOffset..lastMinOffset).map { offset ->
+        return (minOffset until lastMinOffset).map { offset ->
             startMonth.plusMonths(offset)
         }
     }

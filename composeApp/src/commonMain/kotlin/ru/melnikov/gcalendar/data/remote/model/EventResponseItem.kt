@@ -8,7 +8,7 @@ data class EventResponseItem(
     @SerialName("calendarId")
     val calendarId: String,
     @SerialName("calendarName")
-    val calendarName: String,
+    val calendarName: String? = null,
     @SerialName("description")
     val description: String? = null,
     @SerialName("endTime")

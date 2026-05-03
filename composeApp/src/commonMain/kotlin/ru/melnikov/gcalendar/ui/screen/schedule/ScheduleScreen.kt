@@ -1,16 +1,19 @@
 package ru.melnikov.gcalendar.ui.screen.schedule
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -21,7 +24,9 @@ import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
 import ru.melnikov.gcalendar.domain.states.ScheduleStateHolder
 import ru.melnikov.gcalendar.ui.screen.schedule.components.DayWithEvents
+import ru.melnikov.gcalendar.ui.screen.schedule.components.MonthHeader
 import ru.melnikov.gcalendar.ui.screen.schedule.components.ScheduleItem
+import ru.melnikov.gcalendar.ui.screen.schedule.components.WeekHeader
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
 @Composable
@@ -36,7 +41,12 @@ fun ScheduleScreen(
     val currentDate = dateState.currentDate
     val currentYearMonth = YearMonth.from(currentDate)
 
-    val scheduleStateHolder = remember(currentYearMonth, events, holidays) {
+    val scheduleStateHolder = remember(
+        currentYearMonth.year,
+        currentYearMonth.month,
+        events.size,
+        holidays.size
+    ) {
         ScheduleStateHolder(
             initialMonth = currentYearMonth,
             events = events,
@@ -67,7 +77,7 @@ fun ScheduleScreen(
                         idx < scheduleStateHolder.items.size &&
                                 scheduleStateHolder.items[idx] is ScheduleItem.MonthHeader
                     }
-                    ?.let { scheduleStateHolder.items[it] as? ScheduleItem.MonthHeader }
+                    ?.let { idx -> scheduleStateHolder.items[idx] as? ScheduleItem.MonthHeader }
             }
                 .filterNotNull()
                 .distinctUntilChanged()
@@ -106,25 +116,34 @@ fun ScheduleScreen(
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .background(GCalendarTheme.colorScheme.surfaceContainerLow)
-    ) {
-        itemsIndexed(
-            items = scheduleStateHolder.items,
-            key = { _, item -> item.uniqueId }
-        ) { _, item ->
-            when (item) {
-                is ScheduleItem.MonthHeader -> ScheduleItem.MonthHeader(item.yearMonth)
-                is ScheduleItem.WeekHeader -> ScheduleItem.WeekHeader(item.startDate, item.endDate)
-                is ScheduleItem.DayEvents -> DayWithEvents(
-                    date = item.date,
-                    events = item.events,
-                    holidays = item.holidays,
-                    onEventClick = onEventClick
-                )
+    if (scheduleStateHolder.items.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .background(GCalendarTheme.colorScheme.surfaceContainerLow)
+        ) {
+            itemsIndexed(
+                items = scheduleStateHolder.items,
+                key = { _, item -> item.uniqueId }
+            ) { _, item ->
+                when (item) {
+                    is ScheduleItem.MonthHeader -> MonthHeader(item.yearMonth)
+                    is ScheduleItem.WeekHeader -> WeekHeader(item.startDate, item.endDate)
+                    is ScheduleItem.DayEvents -> DayWithEvents(
+                        date = item.date,
+                        events = item.events,
+                        holidays = item.holidays,
+                        onEventClick = onEventClick
+                    )
+                }
             }
         }
     }
