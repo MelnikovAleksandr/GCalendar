@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +62,7 @@ import ru.melnikov.gcalendar.domain.model.User
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalTime::class)
 @Composable
 fun AddEventDialog(
     user: User,
@@ -122,7 +121,7 @@ fun AddEventDialog(
             )
             Text(
                 "Save",
-                style = GCalendarTheme.typography.bodyLargeEmphasized,
+                style = GCalendarTheme.typography.bodyLarge,
                 modifier =
                     Modifier.clickable {
                         if (title.isNotBlank()) {
@@ -448,7 +447,6 @@ enum class EventType(
     OUT_OF_OFFICE("Out of office"),
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun EventTypeSelector(
     selectedType: EventType,
@@ -491,7 +489,7 @@ private fun EventTypeSelector(
                         } else {
                             GCalendarTheme.colorScheme.onSurfaceVariant
                         },
-                    style = GCalendarTheme.typography.bodyMediumEmphasized,
+                    style = GCalendarTheme.typography.bodyMedium,
                 )
             }
         }

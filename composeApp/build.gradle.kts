@@ -21,6 +21,9 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 
     listOf(
         iosX64(),
@@ -83,6 +86,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.ktor.client.okhttp)
         }
     }
 
@@ -106,7 +110,8 @@ dependencies {
         "kspAndroid",
         "kspIosSimulatorArm64",
         "kspIosX64",
-        "kspIosArm64"
+        "kspIosArm64",
+        "kspJvm"
     ).forEach {
         add(it, libs.room.compiler)
         add(it, libs.koin.ksp.compiler)

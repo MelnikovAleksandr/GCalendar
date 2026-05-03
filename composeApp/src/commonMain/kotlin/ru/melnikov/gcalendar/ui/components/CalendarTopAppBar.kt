@@ -74,67 +74,79 @@ fun CalendarTopAppBar(
     onToggleMonthDropdown: (TopBarCalendarView) -> Unit,
     onDayClick: (LocalDate) -> Unit,
     events: List<Event>,
-    holidays: List<Holiday>
+    holidays: List<Holiday>,
 ) {
     val currentYear = dateState.currentDate.year
 
     val showYear = dateState.selectedInViewMonth.year != currentYear
 
     val rotationDegree by animateFloatAsState(
-        targetValue = if (monthDropdownState != TopBarCalendarView.NoView)
-            180f else 0f,
-        animationSpec = tween(
-            durationMillis = 300,
-            easing = EaseInCubic
-        ),
-        label = "rotation"
+        targetValue =
+            if (monthDropdownState != TopBarCalendarView.NoView) {
+                180f
+            } else {
+                0f
+            },
+        animationSpec =
+            tween(
+                durationMillis = 300,
+                easing = EaseInCubic,
+            ),
+        label = "rotation",
     )
 
-    val monthTitle = if (showYear) {
-        "${dateState.selectedInViewMonth.month.name.toSentenceCase()} ${dateState.selectedInViewMonth.year}"
-    } else {
-        dateState.selectedInViewMonth.month.name.toSentenceCase()
-    }
+    val monthTitle =
+        if (showYear) {
+            "${dateState.selectedInViewMonth.month.name.toSentenceCase()} ${dateState.selectedInViewMonth.year}"
+        } else {
+            dateState.selectedInViewMonth.month.name
+                .toSentenceCase()
+        }
 
     Column(
-        modifier = Modifier.background(
-            color = GCalendarTheme.colorScheme.surfaceContainerHigh
-        ).animateContentSize()
+        modifier =
+            Modifier
+                .background(
+                    color = GCalendarTheme.colorScheme.surfaceContainerHigh,
+                ).animateContentSize(),
     ) {
         TopAppBar(
-            colors = TopAppBarColors(
-                containerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
-                scrolledContainerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
-                navigationIconContentColor = GCalendarTheme.colorScheme.onSurface,
-                titleContentColor = GCalendarTheme.colorScheme.onSurface,
-                actionIconContentColor = GCalendarTheme.colorScheme.onSurface,
-                subtitleContentColor = GCalendarTheme.colorScheme.onSurface
-            ),
+            colors =
+                TopAppBarColors(
+                    containerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
+                    scrolledContainerColor = GCalendarTheme.colorScheme.surfaceContainerHigh,
+                    navigationIconContentColor = GCalendarTheme.colorScheme.onSurface,
+                    titleContentColor = GCalendarTheme.colorScheme.onSurface,
+                    actionIconContentColor = GCalendarTheme.colorScheme.onSurface,
+                    subtitleContentColor = GCalendarTheme.colorScheme.onSurface
+                ),
             navigationIcon = {
                 IconButton(onClick = onMenuClick) {
                     Icon(
                         modifier = Modifier.size(20.dp),
                         imageVector = FontAwesomeIcons.Solid.Bars,
-                        contentDescription = "Menu"
+                        contentDescription = "Menu",
                     )
                 }
             },
             title = {
                 Row(
-                    modifier = Modifier.noRippleClickable {
-                        val toggleView =
-                            if (monthDropdownState != TopBarCalendarView.NoView)
-                                TopBarCalendarView.NoView
-                            else
-                                TopBarCalendarView.Month
-                        onToggleMonthDropdown(toggleView)
-                    },
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier.noRippleClickable {
+                            val toggleView =
+                                if (monthDropdownState != TopBarCalendarView.NoView) {
+                                    TopBarCalendarView.NoView
+                                } else {
+                                    TopBarCalendarView.Month
+                                }
+                            onToggleMonthDropdown(toggleView)
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = monthTitle,
                         style = GCalendarTheme.typography.bodyLarge,
-                        color = GCalendarTheme.colorScheme.onSurface
+                        color = GCalendarTheme.colorScheme.onSurface,
                     )
                     Icon(
                         modifier = Modifier.size(20.dp).rotate(rotationDegree),
@@ -144,11 +156,11 @@ fun CalendarTopAppBar(
                 }
             },
             actions = {
-                IconButton(onClick = { /* Handle search */ }) {
+                IconButton(onClick = { }) {
                     Icon(
                         modifier = Modifier.size(20.dp),
                         imageVector = FontAwesomeIcons.Solid.Search,
-                        contentDescription = "Search"
+                        contentDescription = "Search",
                     )
                 }
                 IconButton(onClick = { onSelectToday() }) {
@@ -161,9 +173,10 @@ fun CalendarTopAppBar(
                     imageModel = {
                         "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
                     },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
+                    modifier =
+                        Modifier
+                            .size(32.dp)
+                            .clip(CircleShape),
                 )
             },
         )
@@ -171,10 +184,12 @@ fun CalendarTopAppBar(
         when (monthDropdownState) {
             TopBarCalendarView.Month -> {
                 TopBarMonthView(
-                    month = YearMonth(
-                        dateState.selectedInViewMonth.year, dateState
-                            .selectedInViewMonth.month
-                    ),
+                    month =
+                        YearMonth(
+                            dateState.selectedInViewMonth.year,
+                            dateState
+                                .selectedInViewMonth.month,
+                        ),
                     events = events,
                     holidays = holidays,
                     onDayClick = onDayClick,
@@ -199,7 +214,6 @@ private fun TopBarMonthView(
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
     ) {
-
         item(span = { GridItemSpan(7) }) {
             TopAppBarWeekdayHeader()
         }
@@ -212,13 +226,15 @@ private fun TopBarMonthView(
             val date = LocalDate(month.year, month.month, day + 1)
             TopAppBarDayCell(
                 date = date,
-                events = events.filter { event ->
-                    event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
-                holidays = holidays.filter { holiday ->
-                    holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
-                },
-                onDayClick = onDayClick
+                events =
+                    events.filter { event ->
+                        event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                    },
+                holidays =
+                    holidays.filter { holiday ->
+                        holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
+                    },
+                onDayClick = onDayClick,
             )
         }
     }
@@ -227,9 +243,10 @@ private fun TopBarMonthView(
 @Composable
 private fun TopAppBarWeekdayHeader() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
     ) {
         val daysOfWeek = listOf("S", "M", "T", "W", "T", "F", "S")
 
@@ -239,20 +256,25 @@ private fun TopAppBarWeekdayHeader() {
                 style = GCalendarTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = GCalendarTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 private fun TopAppBarDayCell(
     date: LocalDate,
     events: List<Event>,
     holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
 ) {
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val today =
+        Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
     val isToday = date == today
     Column(
         modifier = Modifier.aspectRatio(1f),
@@ -261,21 +283,22 @@ private fun TopAppBarDayCell(
         Text(
             text = date.day.toString(),
             style = GCalendarTheme.typography.bodySmall,
-            color = when {
-                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                else -> GCalendarTheme.colorScheme.onSurfaceVariant
-            },
+            color =
+                when {
+                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                    else -> GCalendarTheme.colorScheme.onSurfaceVariant
+                },
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .background(
-                    when {
-                        isToday -> GCalendarTheme.colorScheme.primary
-                        else -> Color.Transparent
-                    },
-                    CircleShape
-                )
-                .padding(4.dp)
-                .clickable { onDayClick(date) },
+            modifier =
+                Modifier
+                    .background(
+                        when {
+                            isToday -> GCalendarTheme.colorScheme.primary
+                            else -> Color.Transparent
+                        },
+                        CircleShape,
+                    ).padding(4.dp)
+                    .clickable { onDayClick(date) },
         )
 
         holidays.firstOrNull()?.let { holiday ->
@@ -286,11 +309,12 @@ private fun TopAppBarDayCell(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 10.sp,
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .fillMaxWidth()
-                    .background(Color(0xFF2196F3).copy(alpha = 0.1f), RoundedCornerShape(2.dp))
-                    .padding(2.dp)
+                modifier =
+                    Modifier
+                        .padding(top = 2.dp)
+                        .fillMaxWidth()
+                        .background(Color(0xFF2196F3).copy(alpha = 0.1f), RoundedCornerShape(2.dp))
+                        .padding(2.dp),
             )
         }
 
@@ -299,19 +323,20 @@ private fun TopAppBarDayCell(
 
         Row(
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
         ) {
             displayedEvents.forEach { event ->
                 Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            Color(event.color),
-                            CircleShape
-                        )
-                        .padding(1.dp)
+                    modifier =
+                        Modifier
+                            .size(6.dp)
+                            .background(
+                                Color(event.color),
+                                CircleShape,
+                            ).padding(1.dp),
                 )
                 Spacer(modifier = Modifier.width(2.dp))
             }
@@ -320,7 +345,7 @@ private fun TopAppBarDayCell(
                 Text(
                     text = "+${events.size - maxEventsToDisplay}",
                     fontSize = 10.sp,
-                    color = GCalendarTheme.colorScheme.onSurface
+                    color = GCalendarTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -330,7 +355,7 @@ private fun TopAppBarDayCell(
 @Composable
 private fun TopAppBarEmptyPagingDayCell() {
     Box(
-        modifier = Modifier.padding(4.dp)
+        modifier = Modifier.padding(4.dp),
     )
 }
 
