@@ -1,0 +1,77 @@
+package ru.melnikov.gcalendar.ui.components
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun <T> SwipeablePager(
+    modifier: Modifier = Modifier,
+    currentReference: () -> T,
+    calculateOffset: (current: T, base: T) -> Int,
+    pageToReference: (baseReference: T, initialPage: Int, page: Int) -> T,
+    onReferenceChange: (T) -> Unit,
+    content: @Composable (reference: T) -> Unit,
+) {
+    val totalPages = 10000
+    val initialPage = totalPages / 2
+
+    val baseReference = remember { currentReference() }
+
+    val currentRef = currentReference()
+
+    val referenceOffset =
+        remember(currentRef, baseReference) {
+            calculateOffset(currentRef, baseReference)
+        }
+
+    val pagerState =
+        rememberPagerState(
+            initialPage = initialPage + referenceOffset,
+            pageCount = { totalPages },
+        )
+
+    val pageConverter: (Int) -> T =
+        remember(baseReference, initialPage) {
+            { page ->
+                pageToReference(baseReference, initialPage, page)
+            }
+        }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .collect { page ->
+                val newReference = pageConverter(page)
+                val current = currentReference()
+                if (newReference != current) {
+                    onReferenceChange(newReference)
+                }
+            }
+    }
+
+    LaunchedEffect(currentRef) {
+        val targetOffset = calculateOffset(currentRef, baseReference)
+        val targetPage = initialPage + targetOffset
+        if (pagerState.settledPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    Surface(modifier = modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+        ) { page ->
+            val reference = pageConverter(page)
+            content(reference)
+        }
+    }
+}

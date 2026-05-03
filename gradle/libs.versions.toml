@@ -63,8 +63,10 @@ room-runtime-android = { group = "androidx.room", name = "room-runtime-android",
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room_version" }
 sqlite-bundled = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqlite" }
 store = { module = "org.mobilenativefoundation.store:store5", version.ref = "store" }
-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
 androidx-core = { module = "androidx.window.extensions.core:core", version.ref = "core" }
+androidx-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
+androidx-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
+androidx-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptive" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

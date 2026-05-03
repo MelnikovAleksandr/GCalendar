@@ -2,7 +2,10 @@ package ru.melnikov.gcalendar.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
@@ -11,6 +14,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.rememberDynamicColorScheme
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun GCalendarTheme(
     shapes: Shapes = GCalendarTheme.shapes,
@@ -18,31 +22,37 @@ fun GCalendarTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = rememberDynamicColorScheme(
-        Color(0xFF4285F4),
-        useDarkTheme,
-        isAmoled = true
-    )
+    val colorScheme =
+        rememberDynamicColorScheme(
+            Color(0xFF4285F4),
+            useDarkTheme,
+            isAmoled = true,
+        )
     CompositionLocalProvider {
-        MaterialTheme(
+        MaterialExpressiveTheme(
             colorScheme = colorScheme,
             typography = typography,
             shapes = shapes,
-            content = content
+            content = content,
+            motionScheme = MotionScheme.expressive(),
         )
     }
 }
 
 object GCalendarTheme {
     val dimensions: Dimensions
-        @Composable @ReadOnlyComposable get() = Dimensions
+        @Composable @ReadOnlyComposable
+        get() = Dimensions
 
     val colorScheme: ColorScheme
-        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme
+        @Composable @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme
 
     val typography: Typography
-        @Composable @ReadOnlyComposable get() = Typography
+        @Composable @ReadOnlyComposable
+        get() = Typography
 
     val shapes: Shapes
-        @Composable @ReadOnlyComposable get() = AppShapes
+        @Composable @ReadOnlyComposable
+        get() = AppShapes
 }

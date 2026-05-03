@@ -76,7 +76,10 @@ kotlin {
             implementation(libs.materialKolor)
 
             implementation(libs.store)
-            implementation(libs.material3.adaptive)
+
+            implementation(libs.androidx.adaptive)
+            implementation(libs.androidx.adaptive.layout)
+            implementation(libs.androidx.adaptive.navigation)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

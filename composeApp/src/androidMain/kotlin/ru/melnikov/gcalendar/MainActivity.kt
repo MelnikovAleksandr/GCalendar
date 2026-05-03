@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         isDarkMode = resources.configuration.isNightModeActive
         enableEdgeToEdge(transparentBarStyle, transparentBarStyle)
         setContent {
-            App()
+            CalendarApp()
         }
     }
 }
@@ -46,5 +46,5 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+    CalendarApp()
 }

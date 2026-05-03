@@ -5,5 +5,5 @@ import ru.melnikov.gcalendar.di.initKoin
 
 fun MainViewController() = ComposeUIViewController {
     initKoin()
-    App()
+    CalendarApp()
 }
