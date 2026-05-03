@@ -32,7 +32,6 @@ import ru.melnikov.gcalendar.common.customBorder
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
-import ru.melnikov.gcalendar.domain.states.DateStateHolderImpl
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
 @Composable
@@ -67,8 +66,8 @@ fun BaseCalendarScreen(
                     .background(color = GCalendarTheme.colorScheme.surfaceContainerHigh)
                     .animateContentSize(
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
+                            dampingRatio = Spring.DampingRatioHighBouncy,
+                            stiffness = Spring.StiffnessVeryLow
                         )
                     )
             ) {
@@ -158,7 +157,7 @@ fun BaseCalendarScreenPreview() {
         BaseCalendarScreen(
             events = emptyList(),
             holidays = emptyList(),
-            dateStateHolder = DateStateHolderImpl(),
+            dateStateHolder = DateStateHolder(),
             onEventClick = {},
             numDays = 3,
             onDateClickCallback = {}

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.ui.screen.month.components
 
 import androidx.compose.foundation.background
@@ -16,6 +18,7 @@ import kotlinx.datetime.toLocalDateTime
 import ru.melnikov.gcalendar.common.customBorder
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun WeekdayHeader() {

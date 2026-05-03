@@ -1,4 +1,4 @@
-package ru.melnikov.gcalendar.ui
+package ru.melnikov.gcalendar.common
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
@@ -28,6 +28,7 @@ data class YearMonth(val year: Int, val month: Month) {
         return YearMonth(newYear, Month(newMonthNum))
     }
 
+
     override fun toString(): String {
         return "$year-${month.number.toString().padStart(2, '0')}"
     }
@@ -37,8 +38,4 @@ data class YearMonth(val year: Int, val month: Month) {
             return YearMonth(date.year, date.month)
         }
     }
-}
-
-fun Int.isLeap(): Boolean {
-    return (this % 4 == 0 && this % 100 != 0) || (this % 400 == 0)
 }

@@ -331,7 +331,7 @@ private fun DaysHeaderRow(
 
                     if (currentDayHolidays.isNotEmpty()) {
                         Column {
-                            currentDayHolidays.forEach { holiday ->
+                            currentDayHolidays.take(2).forEach { holiday ->
                                 EventTag(
                                     modifier = Modifier
                                         .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
@@ -342,6 +342,20 @@ private fun DaysHeaderRow(
                                 )
                             }
                         }
+                    }
+                    if (currentDayHolidays.size > 2) {
+                        val extraCount = currentDayHolidays.size - 2
+                        Text(
+                            text = "+$extraCount more",
+                            style = GCalendarTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = GCalendarTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(start = 4.dp, end = 4.dp, bottom = 6.dp)
+                                .fillMaxWidth()
+                        )
                     }
                 }
             }

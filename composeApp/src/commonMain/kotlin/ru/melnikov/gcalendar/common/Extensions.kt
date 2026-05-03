@@ -1,23 +1,20 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.common
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 fun Long.toLocalDateTime(timeZone: TimeZone): LocalDateTime {
@@ -43,11 +40,29 @@ fun String.toSentenceCase(): String {
     }
 }
 
-fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
-    this.clickable(
-        indication = null,
-        interactionSource = remember { MutableInteractionSource() }) {
-        onClick()
+fun parseDateTime(dateTimeString: String): Long {
+    return when {
+        dateTimeString.contains("T") -> {
+            try {
+                Instant.parse(dateTimeString).toEpochMilliseconds()
+            } catch (e: Exception) {
+                val localDateTime =
+                    if (dateTimeString.contains("+") || dateTimeString.contains("Z")) {
+                        val parts = dateTimeString.split("+", "Z").first()
+                        LocalDateTime.parse(parts)
+                    } else {
+                        LocalDateTime.parse(dateTimeString)
+                    }
+
+                localDateTime.toInstant(TimeZone.UTC).toEpochMilliseconds()
+            }
+        }
+
+        else -> {
+            LocalDate.parse(dateTimeString)
+                .atStartOfDayIn(TimeZone.UTC)
+                .toEpochMilliseconds()
+        }
     }
 }
 
@@ -90,83 +105,21 @@ fun formatHour(hour: Int): String {
     return "$displayHour $amPm"
 }
 
-fun Modifier.customBorder(
-    start: Boolean = false,
-    top: Boolean = false,
-    end: Boolean = false,
-    bottom: Boolean = false,
-    startFraction: Float = 0f,
-    topFraction: Float = 0f,
-    endFraction: Float = 0f,
-    bottomFraction: Float = 0f,
-    startLengthFraction: Float = 1f,
-    topLengthFraction: Float = 1f,
-    endLengthFraction: Float = 1f,
-    bottomLengthFraction: Float = 1f,
-    color: Color = Color.Red,
-    width: Dp = 2.dp
-) = composed {
-    drawBehind {
-        val strokeWidth = width.toPx()
-
-        if (start) {
-            val startX = 0f
-            val startY = size.height * startFraction.coerceIn(0f, 1f)
-            val endX = 0f
-            val endY = startY + (size.height * startLengthFraction.coerceIn(0f, 1f))
-                .coerceAtMost(size.height - startY)
-
-            drawLine(
-                color = color,
-                start = Offset(startX, startY),
-                end = Offset(endX, endY),
-                strokeWidth = strokeWidth
-            )
+fun formatTimeRange(start: LocalDateTime, end: LocalDateTime): String {
+    fun formatTime(time: LocalDateTime): String {
+        val hour = when {
+            time.hour == 0 -> 12
+            time.hour > 12 -> time.hour - 12
+            else -> time.hour
         }
-
-        if (top) {
-            val startX = size.width * topFraction.coerceIn(0f, 1f)
-            val startY = 0f
-            val endX = startX + (size.width * topLengthFraction.coerceIn(0f, 1f))
-                .coerceAtMost(size.width - startX)
-            val endY = 0f
-
-            drawLine(
-                color = color,
-                start = Offset(startX, startY),
-                end = Offset(endX, endY),
-                strokeWidth = strokeWidth
-            )
-        }
-
-        if (end) {
-            val startX = size.width
-            val startY = size.height * endFraction.coerceIn(0f, 1f)
-            val endX = size.width
-            val endY = startY + (size.height * endLengthFraction.coerceIn(0f, 1f))
-                .coerceAtMost(size.height - startY)
-
-            drawLine(
-                color = color,
-                start = Offset(startX, startY),
-                end = Offset(endX, endY),
-                strokeWidth = strokeWidth
-            )
-        }
-
-        if (bottom) {
-            val startX = size.width * bottomFraction.coerceIn(0f, 1f)
-            val startY = size.height
-            val endX = startX + (size.width * bottomLengthFraction.coerceIn(0f, 1f))
-                .coerceAtMost(size.width - startX)
-            val endY = size.height
-
-            drawLine(
-                color = color,
-                start = Offset(startX, startY),
-                end = Offset(endX, endY),
-                strokeWidth = strokeWidth
-            )
-        }
+        val minute = time.minute.toString().padStart(2, '0')
+        val amPm = if (time.hour >= 12) "am" else "pm"
+        return "$hour:$minute $amPm"
     }
+
+    return "${formatTime(start)} – ${formatTime(end)}"
+}
+
+fun Int.isLeap(): Boolean {
+    return (this % 4 == 0 && this % 100 != 0) || (this % 400 == 0)
 }

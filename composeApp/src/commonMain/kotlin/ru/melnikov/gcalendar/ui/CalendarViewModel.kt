@@ -10,30 +10,28 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.koin.android.annotation.KoinViewModel
+import ru.melnikov.gcalendar.common.parseDateTime
 import ru.melnikov.gcalendar.data.remote.CalendarApiService
 import ru.melnikov.gcalendar.data.remote.HolidayApiService
+import ru.melnikov.gcalendar.data.remote.Result
 import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
+import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.model.User
 import ru.melnikov.gcalendar.domain.repository.CalendarRepository
 import ru.melnikov.gcalendar.domain.repository.EventRepository
 import ru.melnikov.gcalendar.domain.repository.HolidayRepository
 import ru.melnikov.gcalendar.domain.repository.UserRepository
+import ru.melnikov.gcalendar.domain.states.CalendarUiState
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-import ru.melnikov.gcalendar.data.remote.Result
-import ru.melnikov.gcalendar.domain.model.Holiday
-import kotlin.time.Instant
 
 @OptIn(ExperimentalTime::class)
 @KoinViewModel
@@ -156,15 +154,15 @@ class CalendarViewModel(
                     }
 
                     is Result.Success -> {
-                        val holidays = response.data.response
+                        val remoteHolidays = response.data.response
                             .holidays.map {
                                 Holiday(
                                     id = it.urlId, name = it.name, date =
                                         parseDateTime(it.date.iso), countryCode
                                 )
                             }
-                        holidayRepository.addHolidays(holidays)
-                        _uiState.update { it.copy(holidays = holidays) }
+                        holidayRepository.addHolidays(remoteHolidays)
+                        _uiState.update { it.copy(holidays = remoteHolidays) }
                     }
                 }
             } else {
@@ -257,29 +255,6 @@ class CalendarViewModel(
                     upcomingEvents = CalendarUiState.getUpcomingEvents(updatedEvents, it.selectedDay),
                     selectedEvent = null
                 )
-            }
-        }
-    }
-
-    private fun parseDateTime(dateTimeString: String): Long {
-        return when {
-            dateTimeString.contains("T") -> {
-                try {
-                    Instant.parse(dateTimeString).toEpochMilliseconds()
-                } catch (_: Exception) {
-                    val localDateTime = if (dateTimeString.contains("+") || dateTimeString.contains("Z")) {
-                        val parts = dateTimeString.split("+", "Z").first()
-                        LocalDateTime.parse(parts)
-                    } else {
-                        LocalDateTime.parse(dateTimeString)
-                    }
-                    localDateTime.toInstant(TimeZone.UTC).toEpochMilliseconds()
-                }
-            }
-            else -> {
-                LocalDate.parse(dateTimeString)
-                    .atStartOfDayIn(TimeZone.UTC)
-                    .toEpochMilliseconds()
             }
         }
     }

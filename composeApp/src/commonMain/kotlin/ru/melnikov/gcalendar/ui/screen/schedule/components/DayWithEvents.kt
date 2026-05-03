@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.ui.screen.schedule.components
 
 import androidx.compose.foundation.layout.Column
@@ -14,14 +16,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import ru.melnikov.gcalendar.common.formatTimeRange
 import ru.melnikov.gcalendar.common.toLocalDateTime
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun DayWithEvents(
@@ -89,21 +92,6 @@ fun DayWithEvents(
             }
         }
     }
-}
-
-private fun formatTimeRange(start: LocalDateTime, end: LocalDateTime): String {
-    fun formatTime(time: LocalDateTime): String {
-        val hour = when {
-            time.hour == 0 -> 12
-            time.hour > 12 -> time.hour - 12
-            else -> time.hour
-        }
-        val minute = time.minute.toString().padStart(2, '0')
-        val amPm = if (time.hour >= 12) "am" else "pm"
-        return "$hour:$minute $amPm"
-    }
-
-    return "${formatTime(start)} – ${formatTime(end)}"
 }
 
 @Preview

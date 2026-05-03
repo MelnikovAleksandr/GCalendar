@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.ui.components
 
 import androidx.compose.animation.animateContentSize
@@ -48,6 +50,8 @@ import compose.icons.fontawesomeicons.solid.Search
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.isLeap
 import ru.melnikov.gcalendar.common.lengthOfMonth
 import ru.melnikov.gcalendar.common.noRippleClickable
 import ru.melnikov.gcalendar.common.toLocalDateTime
@@ -56,10 +60,9 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateState
 import ru.melnikov.gcalendar.ui.TopBarCalendarView
-import ru.melnikov.gcalendar.ui.YearMonth
-import ru.melnikov.gcalendar.ui.isLeap
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

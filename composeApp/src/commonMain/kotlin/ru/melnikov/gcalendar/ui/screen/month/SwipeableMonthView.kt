@@ -18,9 +18,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlinx.datetime.LocalDate
+import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.ui.YearMonth
 import ru.melnikov.gcalendar.ui.screen.month.components.MonthView
 import kotlin.math.abs
 import kotlin.math.roundToInt

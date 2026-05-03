@@ -6,7 +6,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
-import ru.melnikov.gcalendar.domain.states.DateStateHolderImpl
 import ru.melnikov.gcalendar.ui.components.BaseCalendarScreen
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
@@ -36,7 +35,7 @@ fun DayScreenPreview() {
     GCalendarTheme {
         DayScreen(
             modifier = Modifier,
-            dateStateHolder = DateStateHolderImpl(),
+            dateStateHolder = DateStateHolder(),
             events = emptyList(),
             holidays = emptyList(),
             onEventClick = {},

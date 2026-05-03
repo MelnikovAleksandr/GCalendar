@@ -1,38 +1,30 @@
+@file:OptIn(ExperimentalTime::class)
+
 package ru.melnikov.gcalendar.domain.states
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import org.koin.core.annotation.Single
-import ru.melnikov.gcalendar.ui.YearMonth
+import ru.melnikov.gcalendar.common.YearMonth
 import kotlin.time.Clock
-
-data class DateState(
-    val currentDate: LocalDate,
-    val selectedDate: LocalDate,
-    val selectedInViewMonth: YearMonth
-)
-
-interface DateStateHolder {
-    val currentDateState: StateFlow<DateState>
-    fun updateSelectedInViewMonthState(selectedInViewMonth: YearMonth)
-    fun updateSelectedDateState(selectedDate: LocalDate)
-}
+import kotlin.time.ExperimentalTime
 
 @Single
-class DateStateHolderImpl : DateStateHolder {
+class DateStateHolder {
     val date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     private val _currentDateState = MutableStateFlow(
         DateState(
             date,
             date,
-            YearMonth(date.year, date.month)
+            YearMonth(date.year, date.month.number),
         )
     )
-    override val currentDateState: StateFlow<DateState> = _currentDateState
-    override fun updateSelectedInViewMonthState(selectedInViewMonth: YearMonth) {
+    val currentDateState: StateFlow<DateState> = _currentDateState
+    fun updateSelectedInViewMonthState(selectedInViewMonth: YearMonth) {
         _currentDateState.tryEmit(
             _currentDateState.value.copy(
                 selectedInViewMonth = selectedInViewMonth
@@ -40,11 +32,11 @@ class DateStateHolderImpl : DateStateHolder {
         )
     }
 
-    override fun updateSelectedDateState(selectedDate: LocalDate) {
+    fun updateSelectedDateState(selectedDate: LocalDate) {
         _currentDateState.tryEmit(
             _currentDateState.value.copy(
                 selectedDate = selectedDate,
-                selectedInViewMonth = YearMonth(selectedDate.year, selectedDate.month)
+                selectedInViewMonth = YearMonth(selectedDate.year, selectedDate.month),
             )
         )
     }

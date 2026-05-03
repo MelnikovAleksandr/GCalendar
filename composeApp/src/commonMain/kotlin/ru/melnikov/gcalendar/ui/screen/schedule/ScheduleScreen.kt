@@ -9,18 +9,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateStateHolder
-import ru.melnikov.gcalendar.ui.YearMonth
+import ru.melnikov.gcalendar.domain.states.ScheduleStateHolder
 import ru.melnikov.gcalendar.ui.screen.schedule.components.DayWithEvents
+import ru.melnikov.gcalendar.ui.screen.schedule.components.ScheduleItem
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 
 @Composable
@@ -35,8 +36,8 @@ fun ScheduleScreen(
     val currentDate = dateState.currentDate
     val currentYearMonth = YearMonth.from(currentDate)
 
-    val scheduleState = remember(currentYearMonth, events, holidays) {
-        ScheduleState(
+    val scheduleStateHolder = remember(currentYearMonth, events, holidays) {
+        ScheduleStateHolder(
             initialMonth = currentYearMonth,
             events = events,
             holidays = holidays
@@ -49,9 +50,9 @@ fun ScheduleScreen(
 
     val listState = rememberLazyListState()
 
-    LaunchedEffect(scheduleState.initialScrollIndex) {
-        if (scheduleState.initialScrollIndex > 0) {
-            listState.scrollToItem(scheduleState.initialScrollIndex)
+    LaunchedEffect(scheduleStateHolder.initialScrollIndex) {
+        if (scheduleStateHolder.initialScrollIndex > 0) {
+            listState.scrollToItem(scheduleStateHolder.initialScrollIndex)
         }
     }
 
@@ -63,10 +64,10 @@ fun ScheduleScreen(
 
                 (firstVisible until firstVisible + visibleCount)
                     .firstOrNull { idx ->
-                        idx < scheduleState.items.size &&
-                                scheduleState.items[idx] is ScheduleItem.MonthHeader
+                        idx < scheduleStateHolder.items.size &&
+                                scheduleStateHolder.items[idx] is ScheduleItem.MonthHeader
                     }
-                    ?.let { scheduleState.items[it] as? ScheduleItem.MonthHeader }
+                    ?.let { scheduleStateHolder.items[it] as? ScheduleItem.MonthHeader }
             }
                 .filterNotNull()
                 .distinctUntilChanged()
@@ -76,12 +77,12 @@ fun ScheduleScreen(
         }
 
         launch {
-            snapshotFlow { listState.firstVisibleItemIndex < ScheduleState.THRESHOLD }
+            snapshotFlow { listState.firstVisibleItemIndex < ScheduleStateHolder.THRESHOLD }
                 .distinctUntilChanged()
                 .collect { needsMore ->
                     if (needsMore) {
                         val firstVisibleIndex = listState.firstVisibleItemIndex
-                        val newItemsCount = scheduleState.loadMoreBackward()
+                        val newItemsCount = scheduleStateHolder.loadMoreBackward()
 
                         if (newItemsCount > 0) {
                             listState.scrollToItem(firstVisibleIndex + newItemsCount)
@@ -94,12 +95,12 @@ fun ScheduleScreen(
             snapshotFlow {
                 val visibleInfo = listState.layoutInfo.visibleItemsInfo
                 val lastVisibleIndex = visibleInfo.lastOrNull()?.index ?: 0
-                lastVisibleIndex >= scheduleState.items.size - ScheduleState.THRESHOLD
+                lastVisibleIndex >= scheduleStateHolder.items.size - ScheduleStateHolder.THRESHOLD
             }
                 .distinctUntilChanged()
                 .collect { needsMore ->
                     if (needsMore) {
-                        scheduleState.loadMoreForward()
+                        scheduleStateHolder.loadMoreForward()
                     }
                 }
         }
@@ -112,7 +113,7 @@ fun ScheduleScreen(
             .background(GCalendarTheme.colorScheme.surfaceContainerLow)
     ) {
         itemsIndexed(
-            items = scheduleState.items,
+            items = scheduleStateHolder.items,
             key = { _, item -> item.uniqueId }
         ) { _, item ->
             when (item) {
@@ -126,60 +127,5 @@ fun ScheduleScreen(
                 )
             }
         }
-    }
-}
-
-class ScheduleState(
-    initialMonth: YearMonth,
-    val events: List<Event>,
-    val holidays: List<Holiday>
-) {
-    private val _items = mutableStateListOf<ScheduleItem>()
-    val items: List<ScheduleItem> = _items
-
-    private val monthRange = MonthRange(initialMonth)
-    val initialScrollIndex: Int
-
-    init {
-        val initialItems = createScheduleItemsForMonthRange(
-            monthRange.getMonths(),
-            events,
-            holidays
-        )
-        _items.addAll(initialItems)
-
-        initialScrollIndex = _items.indexOfFirst {
-            it is ScheduleItem.MonthHeader &&
-                    it.yearMonth.year == initialMonth.year &&
-                    it.yearMonth.month == initialMonth.month
-        }.coerceAtLeast(0)
-    }
-
-    fun loadMoreBackward(): Int {
-        monthRange.expandBackward()
-        val newMonths = monthRange.getLastAddedMonthsBackward()
-        val newItems = createScheduleItemsForMonthRange(newMonths, events, holidays)
-
-        if (newItems.isNotEmpty()) {
-            _items.addAll(0, newItems)
-            return newItems.size
-        }
-        return 0
-    }
-
-    fun loadMoreForward(): Int {
-        monthRange.expandForward()
-        val newMonths = monthRange.getLastAddedMonthsForward()
-        val newItems = createScheduleItemsForMonthRange(newMonths, events, holidays)
-
-        if (newItems.isNotEmpty()) {
-            _items.addAll(newItems)
-            return newItems.size
-        }
-        return 0
-    }
-
-    companion object {
-        const val THRESHOLD = 10
     }
 }
