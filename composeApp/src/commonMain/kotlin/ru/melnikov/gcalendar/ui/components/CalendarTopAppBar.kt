@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalTime::class)
-
 package ru.melnikov.gcalendar.ui.components
 
 import androidx.compose.animation.AnimatedContent
@@ -40,12 +38,14 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
@@ -71,7 +71,6 @@ import ru.melnikov.gcalendar.common.toSentenceCase
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.states.DateState
-import ru.melnikov.gcalendar.ui.TopBarCalendarView
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -80,27 +79,15 @@ import kotlin.time.ExperimentalTime
 @Composable
 internal fun CalendarTopAppBar(
     dateState: DateState,
-    monthDropdownState: TopBarCalendarView,
     onMenuClick: () -> Unit,
     onSelectToday: () -> Unit,
-    onToggleMonthDropdown: (TopBarCalendarView) -> Unit,
     onDayClick: (LocalDate) -> Unit,
     events: List<Event>,
-    holidays: List<Holiday>
+    holidays: List<Holiday>,
 ) {
-    val currentYear = dateState.currentDate.year
-
-    val showYear = dateState.selectedInViewMonth.year != currentYear
-
+    val showYear = dateState.selectedInViewMonth.year != dateState.currentDate.year
     val rotationAngle = remember { Animatable(0f) }
-
-    LaunchedEffect(Unit) {
-        rotationAngle.animateTo(
-            targetValue = 360f,
-            animationSpec = tween(durationMillis = 2000, easing = LinearEasing),
-        )
-    }
-
+    var monthDropdownState by remember { mutableStateOf<TopBarCalendarView>(TopBarCalendarView.NoView) }
     val rotationDegree by animateFloatAsState(
         targetValue =
             if (monthDropdownState != TopBarCalendarView.NoView) {
@@ -113,23 +100,30 @@ internal fun CalendarTopAppBar(
                 durationMillis = 300,
                 easing = EaseInCubic,
             ),
-        label = "rotation"
+        label = "rotation",
     )
-
-    val monthTitle =
+    val monthTitle by derivedStateOf {
         if (showYear) {
             "${dateState.selectedInViewMonth.month.name.toSentenceCase()} ${dateState.selectedInViewMonth.year}"
         } else {
             dateState.selectedInViewMonth.month.name
                 .toSentenceCase()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        rotationAngle.animateTo(
+            targetValue = 360f,
+            animationSpec = tween(durationMillis = 2000, easing = LinearEasing),
+        )
+    }
 
     Column(
         modifier =
             Modifier
                 .background(
                     color = GCalendarTheme.colorScheme.surfaceContainerLow,
-                ).animateContentSize()
+                ).animateContentSize(),
     ) {
         TopAppBar(
             colors =
@@ -139,14 +133,14 @@ internal fun CalendarTopAppBar(
                     navigationIconContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
                     titleContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
                     actionIconContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
-                    subtitleContentColor = GCalendarTheme.colorScheme.onSurfaceVariant
+                    subtitleContentColor = GCalendarTheme.colorScheme.onSurfaceVariant,
                 ),
             navigationIcon = {
                 IconButton(onClick = onMenuClick) {
                     Icon(
                         modifier = Modifier.size(16.dp),
                         imageVector = FontAwesomeIcons.Solid.Bars,
-                        contentDescription = "Menu"
+                        contentDescription = "Menu",
                     )
                 }
             },
@@ -154,13 +148,12 @@ internal fun CalendarTopAppBar(
                 Row(
                     modifier =
                         Modifier.noRippleClickable {
-                            val toggleView =
+                            monthDropdownState =
                                 if (monthDropdownState != TopBarCalendarView.NoView) {
                                     TopBarCalendarView.NoView
                                 } else {
                                     TopBarCalendarView.Month
                                 }
-                            onToggleMonthDropdown(toggleView)
                         },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -173,25 +166,28 @@ internal fun CalendarTopAppBar(
                             ) togetherWith
                                     slideOutVertically(
                                         targetOffsetY = { it },
-                                        animationSpec = tween(durationMillis = 300)
+                                        animationSpec = tween(durationMillis = 300),
                                     )
                         },
-                        label = "monthTitleAnimation"
+                        label = "monthTitleAnimation",
                     ) { animatedMonthTitle ->
                         Text(
                             text = animatedMonthTitle,
-                            color = GCalendarTheme.colorScheme.onSurface
+                            color = GCalendarTheme.colorScheme.onSurface,
                         )
                     }
                     Icon(
-                        modifier = Modifier.size(16.dp).rotate(rotationDegree),
+                        modifier =
+                            Modifier
+                                .size(16.dp)
+                                .graphicsLayer { rotationZ = rotationDegree },
                         imageVector = FontAwesomeIcons.Solid.CaretDown,
-                        contentDescription = "Toggle Month Dropdown"
+                        contentDescription = "Toggle Month Dropdown",
                     )
                 }
             },
             actions = {
-                IconButton(onClick = { }) {
+                IconButton(onClick = { /* Handle search */ }) {
                     Icon(
                         modifier = Modifier.size(16.dp),
                         imageVector = FontAwesomeIcons.Solid.Search,
@@ -206,14 +202,14 @@ internal fun CalendarTopAppBar(
                                 .clip(MaterialShapes.Cookie9Sided.toShape())
                                 .size(24.dp)
                                 .background(GCalendarTheme.colorScheme.secondary),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = dateState.currentDate.day.toString(),
                             style = GCalendarTheme.typography.bodySmall,
                             color = GCalendarTheme.colorScheme.onSecondary,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.graphicsLayer { rotationZ = -rotationAngle.value }
+                            modifier = Modifier.graphicsLayer { rotationZ = -rotationAngle.value },
                         )
                     }
                 }
@@ -225,7 +221,7 @@ internal fun CalendarTopAppBar(
                             .clip(CircleShape),
                     imageModel = {
                         "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
-                    }
+                    },
                 )
             },
         )
@@ -241,7 +237,7 @@ internal fun CalendarTopAppBar(
                         ),
                     events = events,
                     holidays = holidays,
-                    onDayClick = onDayClick
+                    onDayClick = onDayClick,
                 )
             }
 
@@ -255,7 +251,7 @@ private fun TopBarMonthView(
     month: YearMonth,
     events: List<Event>,
     holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
 ) {
     val firstDayOfMonth = LocalDate(month.year, month.month, 1)
     val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
@@ -283,7 +279,7 @@ private fun TopBarMonthView(
                     holidays.filter { holiday ->
                         holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date == date
                     },
-                onDayClick = onDayClick
+                onDayClick = onDayClick,
             )
         }
     }
@@ -305,7 +301,7 @@ private fun TopAppBarWeekdayHeader() {
                 style = GCalendarTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = GCalendarTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -317,7 +313,7 @@ private fun TopAppBarDayCell(
     date: LocalDate,
     events: List<Event>,
     holidays: List<Holiday>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
 ) {
     val today =
         Clock.System
@@ -408,6 +404,14 @@ private fun TopAppBarEmptyPagingDayCell() {
     )
 }
 
+sealed class TopBarCalendarView {
+    data object NoView : TopBarCalendarView()
+
+    data object Week : TopBarCalendarView()
+
+    data object Month : TopBarCalendarView()
+}
+
 @Preview
 @Composable
 fun CalendarTopAppBarPreview() {
@@ -418,10 +422,8 @@ fun CalendarTopAppBarPreview() {
                 selectedDate = LocalDate(2025, 12, 12),
                 selectedInViewMonth = YearMonth(2025, 12)
             ),
-            monthDropdownState = TopBarCalendarView.Week,
             onMenuClick = {},
             onSelectToday = {},
-            onToggleMonthDropdown = {},
             onDayClick = {},
             events = emptyList(),
             holidays = emptyList(),

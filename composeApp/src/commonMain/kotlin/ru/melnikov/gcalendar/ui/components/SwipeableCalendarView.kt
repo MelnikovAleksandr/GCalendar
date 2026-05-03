@@ -20,9 +20,9 @@ import ru.melnikov.gcalendar.domain.model.Holiday
 @Composable
 internal fun SwipeableCalendarView(
     modifier: Modifier = Modifier,
-    startDate: () -> LocalDate,
-    events: () -> List<Event>,
-    holidays: () -> List<Holiday>,
+    startDate: LocalDate,
+    events: List<Event>,
+    holidays: List<Holiday>,
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
     onDateRangeChange: (LocalDate) -> Unit,
@@ -35,19 +35,16 @@ internal fun SwipeableCalendarView(
 ) {
     require(numDays in 1..31) { "numDays must be between 1 and 31" }
 
-    val currentEvents = events()
-    val currentHolidays = holidays()
-
     val eventsByDate =
-        remember(currentEvents) {
-            currentEvents.groupBy { event ->
+        remember(events) {
+            events.groupBy { event ->
                 event.startTime.toLocalDateTime(TimeZone.currentSystemDefault()).date
             }
         }
 
     val holidaysByDate =
-        remember(currentHolidays) {
-            currentHolidays.groupBy { holiday ->
+        remember(holidays) {
+            holidays.groupBy { holiday ->
                 holiday.date.toLocalDateTime(TimeZone.currentSystemDefault()).date
             }
         }

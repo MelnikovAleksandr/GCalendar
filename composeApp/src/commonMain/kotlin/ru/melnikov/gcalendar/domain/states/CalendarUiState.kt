@@ -4,10 +4,8 @@ import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.model.User
-import ru.melnikov.gcalendar.ui.TopBarCalendarView
 
 data class CalendarUiState(
-    val showMonthDropdown: TopBarCalendarView = TopBarCalendarView.NoView,
     val accounts: List<User> = emptyList(),
     val calendars: List<Calendar> = emptyList(),
     val events: List<Event> = emptyList(),

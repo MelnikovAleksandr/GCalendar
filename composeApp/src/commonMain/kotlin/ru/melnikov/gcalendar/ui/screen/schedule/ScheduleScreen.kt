@@ -12,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,9 +41,6 @@ fun ScheduleScreen(
     val currentDate = dateState.currentDate
     val currentYearMonth = YearMonth.from(currentDate)
 
-    val currentEvents = rememberUpdatedState(events)
-    val currentHolidays = rememberUpdatedState(holidays)
-
     val scheduleStateHolder =
         remember(
             currentYearMonth.year,
@@ -52,8 +48,8 @@ fun ScheduleScreen(
         ) {
             ScheduleStateHolder(
                 initialMonth = currentYearMonth,
-                events = currentEvents.value,
-                holidays = currentHolidays.value,
+                events = events,
+                holidays = holidays,
             )
         }
 

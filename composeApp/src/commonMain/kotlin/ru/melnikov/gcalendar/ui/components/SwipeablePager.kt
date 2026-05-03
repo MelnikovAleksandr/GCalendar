@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 @Composable
 internal fun <T> SwipeablePager(
     modifier: Modifier = Modifier,
-    currentReference: () -> T,
+    currentReference: T,
     calculateOffset: (current: T, base: T) -> Int,
     pageToReference: (baseReference: T, initialPage: Int, page: Int) -> T,
     onReferenceChange: (T) -> Unit,
@@ -23,14 +23,11 @@ internal fun <T> SwipeablePager(
 ) {
     val totalPages = 10000
     val initialPage = totalPages / 2
-
-    val baseReference = remember { currentReference() }
-
-    val currentRef = currentReference()
+    val baseReference = remember { currentReference }
 
     val referenceOffset =
-        remember(currentRef, baseReference) {
-            calculateOffset(currentRef, baseReference)
+        remember(currentReference, baseReference) {
+            calculateOffset(currentReference, baseReference)
         }
 
     val pagerState =
@@ -50,15 +47,14 @@ internal fun <T> SwipeablePager(
         snapshotFlow { pagerState.settledPage }
             .collect { page ->
                 val newReference = pageConverter(page)
-                val current = currentReference()
-                if (newReference != current) {
+                if (newReference != currentReference) {
                     onReferenceChange(newReference)
                 }
             }
     }
 
-    LaunchedEffect(currentRef) {
-        val targetOffset = calculateOffset(currentRef, baseReference)
+    LaunchedEffect(currentReference) {
+        val targetOffset = calculateOffset(currentReference, baseReference)
         val targetPage = initialPage + targetOffset
         if (pagerState.settledPage != targetPage) {
             pagerState.animateScrollToPage(targetPage)

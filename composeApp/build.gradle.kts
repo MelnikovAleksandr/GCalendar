@@ -49,7 +49,8 @@ kotlin {
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
+            implementation(libs.jetbrains.material3)
+            implementation(libs.kotlinx.collections.immutable)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
@@ -71,7 +72,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             api(libs.koin.annotations)
 
-            implementation(libs.navigation.compose)
+            implementation(libs.navigation3.compose.ui)
             implementation(libs.icons)
             implementation(libs.materialKolor)
 

@@ -160,7 +160,6 @@ class CalendarViewModel(
                             },
                             async { initializeHolidays() },
                         )
-
                     initJobs.awaitAll()
                 } catch (exception: Exception) {
                     handleError("Initialization failed", exception)
@@ -207,10 +206,6 @@ class CalendarViewModel(
         }
     }
 
-    fun setTopAppBarMonthDropdown(viewType: TopBarCalendarView) {
-        updateState { it.copy(showMonthDropdown = viewType) }
-    }
-
     fun toggleCalendarVisibility(calendar: Calendar) {
         val updatedCalendar = calendar.copy(isVisible = !calendar.isVisible)
 
@@ -243,7 +238,7 @@ class CalendarViewModel(
             onSuccess = { currentState ->
                 currentState.copy(events = currentState.events + event)
             },
-            errorMessage = "Failed to add event"
+            errorMessage = "Failed to add event",
         )
     }
 
@@ -257,10 +252,10 @@ class CalendarViewModel(
                     }
                 currentState.copy(
                     events = updatedEvents,
-                    selectedEvent = null
+                    selectedEvent = null,
                 )
             },
-            errorMessage = "Failed to edit event"
+            errorMessage = "Failed to edit event",
         )
     }
 
@@ -271,17 +266,17 @@ class CalendarViewModel(
                 val updatedEvents = currentState.events.filter { e -> e.id != event.id }
                 currentState.copy(
                     events = updatedEvents,
-                    selectedEvent = null
+                    selectedEvent = null,
                 )
             },
-            errorMessage = "Failed to delete event"
+            errorMessage = "Failed to delete event",
         )
     }
 
     private fun performEventOperation(
         operation: suspend () -> Unit,
         onSuccess: (CalendarUiState) -> CalendarUiState,
-        errorMessage: String
+        errorMessage: String,
     ) {
         viewModelScope.launch {
             runCatching {
@@ -301,12 +296,15 @@ class CalendarViewModel(
         updateState { it.copy(isLoading = isLoading) }
     }
 
-    private fun handleError(message: String, exception: Throwable) {
+    private fun handleError(
+        message: String,
+        exception: Throwable,
+    ) {
         println("CalendarViewModel Error: $message - ${exception.message}")
         updateState { currentState ->
             currentState.copy(
                 isLoading = false,
-                errorMessage = message
+                errorMessage = message,
             )
         }
     }

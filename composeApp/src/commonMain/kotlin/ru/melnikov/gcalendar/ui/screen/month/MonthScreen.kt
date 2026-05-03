@@ -22,8 +22,8 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 fun MonthScreen(
     modifier: Modifier = Modifier,
     dateStateHolder: DateStateHolder,
-    events: () -> List<Event>,
-    holidays: () -> List<Holiday>,
+    events: List<Event>,
+    holidays: List<Holiday>,
     onDateClick: () -> Unit,
 ) {
     val dateState by dateStateHolder.currentDateState.collectAsState()
@@ -51,12 +51,11 @@ fun MonthScreen(
 
     SwipeablePager(
         modifier = modifier.testTag("SwipeableMonthView"),
-        currentReference = {
+        currentReference =
             YearMonth(
                 dateState.selectedInViewMonth.year,
                 dateState.selectedInViewMonth.month,
-            )
-        },
+            ),
         calculateOffset = { current, base ->
             (current.year - base.year) * 12 + (current.month.number - base.month.number)
         },
@@ -68,11 +67,11 @@ fun MonthScreen(
     ) { month ->
         val monthEvents =
             remember(month, events) {
-                events()
+                events
             }
         val monthHolidays =
             remember(month, holidays) {
-                holidays()
+                holidays
             }
 
         MonthView(
@@ -81,8 +80,8 @@ fun MonthScreen(
                     .fillMaxSize()
                     .testTag("MonthView_$month"),
             month = month,
-            events = { monthEvents },
-            holidays = { monthHolidays },
+            events = monthEvents,
+            holidays = monthHolidays,
             onDayClick = onSpecificDayClicked,
         )
     }
@@ -95,8 +94,8 @@ fun MonthScreenPreview() {
         MonthScreen(
             modifier = Modifier,
             dateStateHolder = DateStateHolder(),
-            events = { emptyList() },
-            holidays = { emptyList() },
+            events = emptyList(),
+            holidays = emptyList(),
             onDateClick = {}
         )
     }
