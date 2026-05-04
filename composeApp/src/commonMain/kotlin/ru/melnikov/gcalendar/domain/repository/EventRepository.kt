@@ -1,70 +1,85 @@
+@file:OptIn(ExperimentalStoreApi::class)
+
 package ru.melnikov.gcalendar.domain.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
+import org.mobilenativefoundation.store.store5.MutableStore
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
+import org.mobilenativefoundation.store.store5.StoreWriteRequest
 import ru.melnikov.gcalendar.common.asEntity
-import ru.melnikov.gcalendar.common.asEvent
 import ru.melnikov.gcalendar.data.local.EventDao
-import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
-import ru.melnikov.gcalendar.data.remote.RemoteCalendarApiService
+import ru.melnikov.gcalendar.data.store.EventKey
+import ru.melnikov.gcalendar.data.store.SingleEventKey
 import ru.melnikov.gcalendar.domain.model.Event
-import ru.melnikov.gcalendar.data.remote.Result
 
-@Single
+@Single(binds = [IEventRepository::class])
 class EventRepository(
+    @Named("eventStore") private val eventStore: MutableStore<EventKey, List<Event>>,
+    @Named("singleEventStore") private val singleEventStore: MutableStore<SingleEventKey, Event>,
     private val eventDao: EventDao,
-    private val apiService: RemoteCalendarApiService
-) {
-    suspend fun getEventsForCalendar(calendarIds: List<String>, startTime: Long, endTime: Long) {
-        when (val apiEvents = apiService.fetchEventsForCalendar(calendarIds, startTime, endTime)) {
-            is Result.Error -> {
-                println("Error getEventsForCalendar " + apiEvents.error.toString())
-            }
+) : BaseRepository(),
+    IEventRepository {
 
-            is Result.Success -> {
-                val events = apiEvents.data.map { it.asEvent() }
-                events.forEach { event ->
-                    addEvent(event)
-                }
-            }
+    override suspend fun syncEventsForCalendar(
+        calendarIds: List<String>,
+        startTime: Long,
+        endTime: Long,
+    ): Unit =
+        safeCallOrThrow("syncEventsForCalendar(range=$startTime-$endTime)") {
+            val key = EventKey(userId = "", startTime = startTime, endTime = endTime)
+            eventStore
+                .stream<Unit>(StoreReadRequest.fresh(key))
+                .filterIsInstance<StoreReadResponse.Data<List<Event>>>()
+                .first()
         }
-    }
 
-    fun getEventsForCalendarsInRange(
+    override fun getEventsForCalendarsInRange(
         userId: String,
         start: Long,
-        end: Long
-    ): Flow<List<Event>> =
-        eventDao.getEventsBetweenDates(userId, start, end).map { entities ->
-            entities.map { it.asEvent() }
-        }
+        end: Long,
+    ): Flow<List<Event>> {
+        val key = EventKey(userId = userId, startTime = start, endTime = end)
 
-    suspend fun addEvent(event: Event) {
-        val eventEntity = event.asEntity()
-        val reminderEntities = event.reminderMinutes.map { minutes ->
-            EventReminderEntity(
-                event.id,
-                minutes
-            )
-        }
-        eventDao.insertEventWithReminders(eventEntity, reminderEntities)
+        return safeFlow(
+            flowName = "getEventsForCalendarsInRange",
+            defaultValue = emptyList(),
+            flow =
+                eventStore
+                    .stream<Unit>(StoreReadRequest.cached(key, refresh = false))
+                    .filterIsInstance<StoreReadResponse.Data<List<Event>>>()
+                    .map { it.value },
+        )
     }
 
-    suspend fun updateEvent(event: Event) {
-        val eventEntity = event.asEntity()
-        eventDao.upsertEvent(eventEntity)
-
-        eventDao.deleteEventReminders(event.id)
-        val reminderEntities = event.reminderMinutes.map { minutes ->
-            EventReminderEntity(event.id, minutes)
+    override suspend fun addEvent(event: Event): Unit =
+        safeCallOrThrow("addEvent(${event.id})") {
+            val key = SingleEventKey(event.id)
+            singleEventStore.write(StoreWriteRequest.of(key, event))
         }
-        reminderEntities.forEach { reminder ->
-            eventDao.insertEventReminder(reminder)
-        }
-    }
 
-    suspend fun deleteEvent(event: Event) {
-        eventDao.deleteEvent(event.asEntity())
-    }
+    override suspend fun updateEvent(event: Event): Unit =
+        safeCallOrThrow("updateEvent(${event.id})") {
+            val key = SingleEventKey(event.id)
+            singleEventStore.write(StoreWriteRequest.of(key, event))
+        }
+
+
+    override suspend fun deleteEvent(event: Event): Unit =
+        safeCallOrThrow(
+            "deleteEvent(${event.id})",
+        ) {
+            eventDao.deleteEventReminders(event.id)
+
+            eventDao.deleteEvent(event.asEntity())
+
+            val key = SingleEventKey(event.id)
+            singleEventStore.clear(key)
+        }
 }

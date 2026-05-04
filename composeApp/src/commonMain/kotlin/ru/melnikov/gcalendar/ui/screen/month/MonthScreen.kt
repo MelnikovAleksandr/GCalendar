@@ -13,7 +13,7 @@ import kotlinx.datetime.number
 import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.domain.states.DateStateHolder
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.components.SwipeablePager
 import ru.melnikov.gcalendar.ui.screen.month.components.MonthView
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme

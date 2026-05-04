@@ -69,7 +69,7 @@ import ru.melnikov.gcalendar.common.toLocalDateTime
 import ru.melnikov.gcalendar.common.toSentenceCase
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.domain.states.DateState
+import ru.melnikov.gcalendar.ui.state.DateState
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime

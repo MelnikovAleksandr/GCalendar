@@ -1,4 +1,4 @@
-package ru.melnikov.gcalendar.domain.states
+package ru.melnikov.gcalendar.ui.state
 
 import androidx.compose.runtime.mutableStateListOf
 import kotlinx.collections.immutable.toImmutableList

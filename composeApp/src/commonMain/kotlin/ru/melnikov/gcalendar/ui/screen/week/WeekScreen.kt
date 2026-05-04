@@ -7,7 +7,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.domain.states.DateStateHolder
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.components.BaseCalendarScreen
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 

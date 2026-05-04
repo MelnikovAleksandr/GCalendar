@@ -1,6 +1,7 @@
 package ru.melnikov.gcalendar.common
 
 import ru.melnikov.gcalendar.data.local.model.EventEntity
+import ru.melnikov.gcalendar.data.local.model.EventWithReminders
 import ru.melnikov.gcalendar.data.remote.model.EventResponseItem
 import ru.melnikov.gcalendar.domain.model.Event
 
@@ -37,6 +38,24 @@ fun EventEntity.asEvent(): Event {
         reminderMinutes = emptyList(),
         calendarName = calendarName,
         color = convertStringToColor(calendarId + calendarName)
+    )
+}
+
+fun EventWithReminders.asEvent(): Event {
+    return Event(
+        id = event.id,
+        calendarId = event.calendarId,
+        title = event.title,
+        description = event.description,
+        location = event.location,
+        startTime = event.startTime,
+        endTime = event.endTime,
+        isAllDay = event.isAllDay,
+        isRecurring = event.isRecurring,
+        recurringRule = event.recurringRule,
+        reminderMinutes = reminders.map { it.minutes },
+        calendarName = event.calendarName,
+        color = convertStringToColor(event.calendarId + event.calendarName)
     )
 }
 

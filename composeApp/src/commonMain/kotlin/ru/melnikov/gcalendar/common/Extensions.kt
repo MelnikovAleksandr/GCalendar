@@ -45,7 +45,7 @@ fun parseDateTime(dateTimeString: String): Long =
         dateTimeString.contains("T") -> {
             try {
                 Instant.parse(dateTimeString).toEpochMilliseconds()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 val localDateTime =
                     if (dateTimeString.contains("+") || dateTimeString.contains("Z")) {
                         val parts = dateTimeString.split("+", "Z").first()
@@ -92,7 +92,7 @@ fun formatTimeRange(
                 else -> time.hour
             }
         val minute = time.minute.toString().padStart(2, '0')
-        val amPm = if (time.hour >= 12) "am" else "pm"
+        val amPm = if (time.hour >= 12) "pm" else "am"
         return "$hour:$minute $amPm"
     }
 

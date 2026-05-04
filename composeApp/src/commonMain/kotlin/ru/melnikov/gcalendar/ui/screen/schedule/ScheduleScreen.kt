@@ -22,8 +22,8 @@ import kotlinx.coroutines.launch
 import ru.melnikov.gcalendar.common.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.domain.states.DateStateHolder
-import ru.melnikov.gcalendar.domain.states.ScheduleStateHolder
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
+import ru.melnikov.gcalendar.ui.state.ScheduleStateHolder
 import ru.melnikov.gcalendar.ui.screen.schedule.components.DayWithEvents
 import ru.melnikov.gcalendar.ui.screen.schedule.components.MonthHeader
 import ru.melnikov.gcalendar.ui.screen.schedule.components.ScheduleItem

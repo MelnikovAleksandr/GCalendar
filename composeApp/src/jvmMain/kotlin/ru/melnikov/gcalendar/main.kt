@@ -7,6 +7,7 @@ import ru.melnikov.gcalendar.di.initKoin
 fun main() {
     initKoin()
     application {
+        System.setProperty("skiko.renderApi", "SOFTWARE")
         Window(
             onCloseRequest = ::exitApplication,
             title = "XCalendar",

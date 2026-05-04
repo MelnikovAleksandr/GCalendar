@@ -4,14 +4,15 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.http.parameters
 import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import ru.melnikov.gcalendar.common.AppLogger
 import ru.melnikov.gcalendar.data.remote.error.DataError
 
 class ClientWrapper(
-    val networkClient: HttpClient,
+    @PublishedApi internal val networkClient: HttpClient,
+    @PublishedApi internal val json: Json,
 ) {
     suspend inline fun <reified T> networkGetUseCase(
         endpoint: String,
@@ -20,38 +21,53 @@ class ClientWrapper(
         val response =
             try {
                 networkClient.get(endpoint) {
-                    parameters {
-                        if (queries != null) {
-                            for ((key, value) in queries) {
-                                parameter(key, value)
-                            }
-                        }
+                    queries?.forEach { (key, value) ->
+                        parameter(key, value)
                     }
                 }
             } catch (_: UnresolvedAddressException) {
                 return Result.Error(DataError.Network.NO_INTERNET)
             } catch (_: SerializationException) {
                 return Result.Error(DataError.Network.SERIALIZATION)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                AppLogger.e {
+                    "Network request failed: ${e::class.simpleName}: ${e.message}"
+                }
                 return Result.Error(DataError.Network.UNKNOWN)
             }
         return when (response.status.value) {
             in 200..299 -> {
-                val json =
-                    Json {
-                        ignoreUnknownKeys = true
-                        isLenient = true
-                    }
-                val data = json.decodeFromString<T>(response.body())
-                Result.Success(data)
+                try {
+                    val data = json.decodeFromString<T>(response.body())
+                    Result.Success(data)
+                } catch (_: SerializationException) {
+                    Result.Error(DataError.Network.SERIALIZATION)
+                }
             }
 
-            401 -> Result.Error(DataError.Network.UNAUTHORIZED)
-            409 -> Result.Error(DataError.Network.CONFLICT)
-            408 -> Result.Error(DataError.Network.REQUEST_TIMEOUT)
-            413 -> Result.Error(DataError.Network.PAYLOAD_TOO_LARGE)
-            in 500..599 -> Result.Error(DataError.Network.SERVER_ERROR)
-            else -> Result.Error(DataError.Network.UNKNOWN)
+            401 -> {
+                Result.Error(DataError.Network.UNAUTHORIZED)
+            }
+
+            409 -> {
+                Result.Error(DataError.Network.CONFLICT)
+            }
+
+            408 -> {
+                Result.Error(DataError.Network.REQUEST_TIMEOUT)
+            }
+
+            413 -> {
+                Result.Error(DataError.Network.PAYLOAD_TOO_LARGE)
+            }
+
+            in 500..599 -> {
+                Result.Error(DataError.Network.SERVER_ERROR)
+            }
+
+            else -> {
+                Result.Error(DataError.Network.UNKNOWN)
+            }
         }
     }
 }

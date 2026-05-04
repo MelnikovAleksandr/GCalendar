@@ -28,15 +28,18 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import ru.melnikov.gcalendar.domain.states.DateStateHolder
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.CalendarViewModel
-import ru.melnikov.gcalendar.ui.components.AddEventDialog
 import ru.melnikov.gcalendar.ui.components.CalendarBottomNavigationBar
 import ru.melnikov.gcalendar.ui.components.CalendarTopAppBar
-import ru.melnikov.gcalendar.ui.components.EventDetailsDialog
+import ru.melnikov.gcalendar.ui.components.ErrorSnackBar
+import ru.melnikov.gcalendar.ui.components.dialog.AddEventDialog
+import ru.melnikov.gcalendar.ui.components.dialog.EventDetailsDialog
 import ru.melnikov.gcalendar.ui.navigation.NavigableScreen
 import ru.melnikov.gcalendar.ui.navigation.NavigationHost
+import ru.melnikov.gcalendar.ui.navigation.replaceLast
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.viewmodel.EventViewModel
 
 private val config =
     SavedStateConfiguration {
@@ -54,31 +57,39 @@ private val config =
 
 @Composable
 fun CalendarApp() {
-    val viewModel = koinViewModel<CalendarViewModel>()
+    val calendarViewModel = koinViewModel<CalendarViewModel>()
+    val eventViewModel = koinViewModel<EventViewModel>()
     val dateStateHolder = koinInject<DateStateHolder>()
     GCalendarTheme {
-        CalendarApp(viewModel, dateStateHolder)
+        CalendarApp(
+            calendarViewModel = calendarViewModel,
+            eventViewModel = eventViewModel,
+            dateStateHolder = dateStateHolder,
+        )
     }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarApp(
-    viewModel: CalendarViewModel,
+    calendarViewModel: CalendarViewModel,
+    eventViewModel: EventViewModel,
     dateStateHolder: DateStateHolder,
 ) {
-    val calendarUiState by viewModel.uiState.collectAsState()
+    val calendarUiState by calendarViewModel.uiState.collectAsState()
+    val eventUiState by eventViewModel.uiState.collectAsState()
     val dataState by dateStateHolder.currentDateState.collectAsState()
     val backStack = rememberNavBackStack(config, NavigableScreen.Month)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showAddBottomSheet by remember { mutableStateOf(false) }
-    var showDetailsBottomSheet by remember { mutableStateOf(false) }
-
+    val selectedEvent = eventUiState.selectedEvent
+    val showDetailsBottomSheet = selectedEvent != null
     val visibleCalendars by remember(calendarUiState.calendars) {
         derivedStateOf { calendarUiState.calendars.filter { it.isVisible } }
     }
     val events = remember(calendarUiState.events) { calendarUiState.events }
     val holidays = remember(calendarUiState.holidays) { calendarUiState.holidays }
+    val displayError = calendarUiState.displayError ?: eventUiState.errorMessage
 
     Scaffold(
         containerColor = GCalendarTheme.colorScheme.surfaceContainerLow,
@@ -96,6 +107,15 @@ private fun CalendarApp(
                 holidays = holidays,
             )
         },
+        snackbarHost = {
+            ErrorSnackBar(
+                message = displayError,
+                onDismiss = {
+                    calendarViewModel.clearError()
+                    eventViewModel.clearError()
+                },
+            )
+        },
     ) { paddingValues ->
         Box {
             NavigationHost(
@@ -110,8 +130,7 @@ private fun CalendarApp(
                 events = events,
                 holidays = holidays,
                 onEventClick = { event ->
-                    viewModel.selectEvent(event)
-                    showDetailsBottomSheet = true
+                    eventViewModel.selectEvent(event)
                 },
             )
             CalendarBottomNavigationBar(
@@ -121,13 +140,7 @@ private fun CalendarApp(
                         .padding(bottom = paddingValues.calculateBottomPadding()),
                 selectedView = backStack.lastOrNull() as NavigableScreen,
                 onViewSelect = { view ->
-                    val currentView = backStack.lastOrNull()
-                    if (currentView != view) {
-                        if (backStack.isNotEmpty()) {
-                            backStack.removeLastOrNull()
-                        }
-                        backStack.add(view)
-                    }
+                    backStack.replaceLast(view)
                 },
                 onAddClick = { showAddBottomSheet = true },
             )
@@ -144,7 +157,7 @@ private fun CalendarApp(
                         calendars = visibleCalendars.toImmutableList(),
                         selectedDate = dataState.currentDate,
                         onSave = { event ->
-                            viewModel.addEvent(event)
+                            eventViewModel.addEvent(event)
                             showAddBottomSheet = false
                         },
                         onDismiss = {
@@ -156,25 +169,22 @@ private fun CalendarApp(
         }
 
         if (showDetailsBottomSheet) {
-            calendarUiState.selectedEvent?.let { event ->
-                ModalBottomSheet(
-                    onDismissRequest = { showDetailsBottomSheet = false },
-                    sheetState = sheetState,
-                    properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
-                ) {
-                    EventDetailsDialog(
-                        event = event,
-                        onEdit = {
-                            viewModel.editEvent(it)
-                            viewModel.clearSelectedEvent()
-                            showDetailsBottomSheet = false
-                        },
-                        onDismiss = {
-                            viewModel.clearSelectedEvent()
-                            showDetailsBottomSheet = false
-                        },
-                    )
-                }
+            ModalBottomSheet(
+                onDismissRequest = {
+                    eventViewModel.clearSelectedEvent()
+                },
+                sheetState = sheetState,
+                properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
+            ) {
+                EventDetailsDialog(
+                    event = selectedEvent,
+                    onEdit = { editedEvent ->
+                        eventViewModel.editEvent(editedEvent)
+                    },
+                    onDismiss = {
+                        eventViewModel.clearSelectedEvent()
+                    },
+                )
             }
         }
     }

@@ -1,4 +1,4 @@
-package ru.melnikov.gcalendar.domain.states
+package ru.melnikov.gcalendar.ui.state
 
 import ru.melnikov.gcalendar.common.YearMonth
 

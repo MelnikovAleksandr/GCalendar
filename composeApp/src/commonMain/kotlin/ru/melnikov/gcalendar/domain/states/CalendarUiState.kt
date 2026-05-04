@@ -6,6 +6,7 @@ import ru.melnikov.gcalendar.domain.model.Calendar
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.domain.model.User
+import ru.melnikov.gcalendar.domain.utils.DomainError
 
 data class CalendarUiState(
     val accounts: ImmutableList<User> = persistentListOf(),
@@ -14,8 +15,10 @@ data class CalendarUiState(
     val holidays: ImmutableList<Holiday> = persistentListOf(),
     val selectedEvent: Event? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    val error: DomainError? = null,
 ) {
-    val hasError: Boolean get() = errorMessage != null
+
+    val hasError: Boolean get() = error != null
+    val displayError: String? get() = error?.message
     val isEmpty: Boolean get() = !isLoading && accounts.isEmpty() && calendars.isEmpty() && events.isEmpty()
 }

@@ -1,14 +1,15 @@
 package ru.melnikov.gcalendar.data.remote
 
 import io.ktor.client.HttpClient
+import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
 import ru.melnikov.gcalendar.data.remote.error.DataError
 import ru.melnikov.gcalendar.data.remote.model.CalendarResponseItem
 import ru.melnikov.gcalendar.data.remote.model.EventResponseItem
 
 @Single
-class RemoteCalendarApiService(client: HttpClient) {
-    private val clientWrapper = ClientWrapper(client)
+class RemoteCalendarApiService(client: HttpClient, json: Json) {
+    private val clientWrapper = ClientWrapper(client, json)
     private val baseUrl = "https://raw.githubusercontent.com/MelnikovAleksandr/GCalendar/develop/"
     suspend fun fetchCalendarsForUser(userId: String): Result<List<CalendarResponseItem>,
             DataError> {

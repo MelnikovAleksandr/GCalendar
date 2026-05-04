@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import ru.melnikov.gcalendar.data.local.AppDatabase
+import ru.melnikov.gcalendar.data.local.DATABASE_NAME
 import java.io.File
 
 actual fun getDatabase(): AppDatabase {
@@ -20,10 +21,12 @@ actual fun getDatabase(): AppDatabase {
         appDataDir.mkdirs()
     }
 
-    val dbFile = File(appDataDir, "calendar.db")
+    val dbFile = File(appDataDir, DATABASE_NAME)
     return Room
         .databaseBuilder<AppDatabase>(dbFile.absolutePath)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.Default)
+        .addMigrations(*AppDatabase.MIGRATIONS)
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

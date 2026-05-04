@@ -10,14 +10,17 @@ import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 import ru.melnikov.gcalendar.data.local.AppDatabase
+import ru.melnikov.gcalendar.data.local.DATABASE_NAME
 
 actual fun getDatabase(): AppDatabase {
-    val dbFile = documentDirectory() + "/calendar.db"
+    val dbFile = documentDirectory() + "/$DATABASE_NAME"
     return Room.databaseBuilder<AppDatabase>(
         name = dbFile,
     )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.Default)
+        .addMigrations(*AppDatabase.MIGRATIONS)
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }
 

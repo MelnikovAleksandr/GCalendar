@@ -11,7 +11,7 @@ import androidx.navigation3.ui.NavDisplay
 import kotlinx.collections.immutable.ImmutableList
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
-import ru.melnikov.gcalendar.domain.states.DateStateHolder
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.screen.day.DayScreen
 import ru.melnikov.gcalendar.ui.screen.month.MonthScreen
 import ru.melnikov.gcalendar.ui.screen.schedule.ScheduleScreen

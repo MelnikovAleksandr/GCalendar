@@ -10,10 +10,10 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import ru.melnikov.gcalendar.data.local.model.EventEntity
 import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
+import ru.melnikov.gcalendar.data.local.model.EventWithReminders
 
 @Dao
 interface EventDao {
-
 
     @Query(
         "SELECT * FROM events " +
@@ -26,8 +26,18 @@ interface EventDao {
         endTime: Long
     ): Flow<List<EventEntity>>
 
+    @Transaction
+    @Query("SELECT events.* FROM events " +
+            "INNER JOIN calendars ON events.calendarId = calendars.id " +
+            "WHERE calendars.userId = :userId AND startTime >= :startTime AND endTime <= :endTime")
+    fun getEventsWithRemindersBetweenDates(userId: String, startTime: Long, endTime: Long): Flow<List<EventWithReminders>>
+
     @Query("SELECT * FROM events WHERE id = :eventId")
     suspend fun getEventById(eventId: String): EventEntity?
+
+    @Transaction
+    @Query("SELECT * FROM events WHERE id = :eventId")
+    suspend fun getEventWithRemindersById(eventId: String): EventWithReminders?
 
     @Upsert
     suspend fun upsertEvent(event: EventEntity): Long

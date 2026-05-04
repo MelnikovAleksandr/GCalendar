@@ -8,26 +8,33 @@ import ru.melnikov.gcalendar.common.asUserEntity
 import ru.melnikov.gcalendar.data.local.UserDao
 import ru.melnikov.gcalendar.domain.model.User
 
-@Single
-class UserRepository(private val userDao: UserDao) {
+@Single(binds = [IUserRepository::class])
+class UserRepository(
+    private val userDao: UserDao,
+) : BaseRepository(), IUserRepository {
 
-    suspend fun getUserFromApi() {
+    override suspend fun getUserFromApi() = safeCallOrThrow("getUserFromApi") {
         val dummyUser = User(
             id = "user_id",
             name = "Demo User",
             email = "user@example.com",
-            photoUrl = "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg"
+            photoUrl = "https://t4.ftcdn.net/jpg/00/04/09/63/360_F_4096398_nMeewldssGd7guDmvmEDXqPJUmkDWyqA.jpg",
         )
         addUser(dummyUser)
     }
-    fun getAllUsers(): Flow<List<User>> =
-        userDao.getAllUsers().map { entities -> entities.map { it.asUser() } }
 
-    suspend fun addUser(user: User) {
+    override fun getAllUsers(): Flow<List<User>> =
+        safeFlow(
+            flowName = "getAllUsers",
+            defaultValue = emptyList(),
+            flow = userDao.getAllUsers().map { entities -> entities.map { it.asUser() } }
+        )
+
+    override suspend fun addUser(user: User) = safeCallOrThrow("addUser(${user.id})") {
         userDao.insertUser(user.asUserEntity())
     }
 
-    suspend fun deleteUser(user: User) {
+    override suspend fun deleteUser(user: User) = safeCallOrThrow("deleteUser(${user.id})") {
         userDao.deleteUser(user.asUserEntity())
     }
 }
