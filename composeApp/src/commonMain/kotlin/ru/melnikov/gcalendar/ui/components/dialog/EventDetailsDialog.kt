@@ -33,6 +33,8 @@ import gcalendar.composeapp.generated.resources.ic_notifications
 import org.jetbrains.compose.resources.painterResource
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.transitions.SharedElementType
+import ru.melnikov.gcalendar.ui.transitions.sharedEventElement
 import ru.melnikov.gcalendar.ui.utils.DateTimeFormatter
 
 
@@ -61,6 +63,7 @@ fun EventDetailsDialog(
             Spacer(modifier = Modifier.height(8.dp))
 
             EventTitleRow(
+                eventId = event.id,
                 title = event.title,
                 color = event.color,
             )
@@ -144,23 +147,31 @@ private fun DetailsHeader(
 
 @Composable
 private fun EventTitleRow(
+    eventId: String,
     title: String,
     color: Int,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .sharedEventElement(
+                    eventId = eventId,
+                    type = SharedElementType.EventCard,
+                    isVisible = true,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .width(16.dp)
-                .height(16.dp)
-                .background(
-                    Color(color),
-                    RoundedCornerShape(2.dp),
-                ),
+            modifier =
+                Modifier
+                    .width(16.dp)
+                    .height(16.dp)
+                    .background(
+                        Color(color),
+                        RoundedCornerShape(2.dp),
+                    ),
         )
 
         Spacer(modifier = Modifier.width(16.dp))

@@ -7,7 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
 import ru.melnikov.gcalendar.common.YearMonth
@@ -22,8 +23,9 @@ import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 fun MonthScreen(
     modifier: Modifier = Modifier,
     dateStateHolder: DateStateHolder,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    events: ImmutableList<Event>,
+    holidays: ImmutableList<Holiday>,
+    isVisible: Boolean = true,
     onDateClick: () -> Unit,
 ) {
     val dateState by dateStateHolder.currentDateState.collectAsState()
@@ -59,20 +61,12 @@ fun MonthScreen(
         },
         onReferenceChange = onMonthChange,
     ) { month ->
-        val monthEvents =
-            remember(month, events) {
-                events
-            }
-        val monthHolidays =
-            remember(month, holidays) {
-                holidays
-            }
-
         MonthView(
             modifier = Modifier.testTag("MonthView_$month"),
             month = month,
-            events = monthEvents.toImmutableList(),
-            holidays = monthHolidays.toImmutableList(),
+            events = events,
+            holidays = holidays,
+            isVisible = isVisible,
             onDayClick = onSpecificDayClicked,
         )
     }
@@ -85,8 +79,8 @@ fun MonthScreenPreview() {
         MonthScreen(
             modifier = Modifier,
             dateStateHolder = DateStateHolder(),
-            events = emptyList(),
-            holidays = emptyList(),
+            events = persistentListOf(),
+            holidays = persistentListOf(),
             onDateClick = {}
         )
     }

@@ -34,6 +34,9 @@ import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.transitions.SharedElementType
+import ru.melnikov.gcalendar.ui.transitions.sharedDateElement
+import ru.melnikov.gcalendar.ui.transitions.sharedTimeColumn
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -42,6 +45,7 @@ internal fun BaseCalendarScreen(
     dateStateHolder: DateStateHolder,
     events: ImmutableList<Event>,
     holidays: ImmutableList<Holiday>,
+    isVisible: Boolean = true,
     onEventClick: (Event) -> Unit,
     onDateClickCallback: () -> Unit,
     numDays: Int,
@@ -75,7 +79,12 @@ internal fun BaseCalendarScreen(
                     Column(
                         modifier =
                             Modifier
-                                .fillMaxSize(),
+                                .fillMaxSize()
+                                .sharedDateElement(
+                                    date = dateState.selectedDate,
+                                    type = SharedElementType.DayHeader,
+                                    isVisible = isVisible,
+                                ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Top,
                     ) {
@@ -95,7 +104,11 @@ internal fun BaseCalendarScreen(
                                 Modifier
                                     .padding(vertical = 4.dp)
                                     .size(30.dp)
-                                    .clip(MaterialShapes.Cookie9Sided.toShape())
+                                    .sharedDateElement(
+                                        date = dateState.selectedDate,
+                                        type = SharedElementType.DateCell,
+                                        isVisible = isVisible,
+                                    ).clip(MaterialShapes.Cookie9Sided.toShape())
                                     .background(
                                         when {
                                             isToday -> GCalendarTheme.colorScheme.primary
@@ -120,6 +133,7 @@ internal fun BaseCalendarScreen(
             TimeColumn(
                 modifier =
                     Modifier
+                        .sharedTimeColumn(isVisible = isVisible)
                         .background(GCalendarTheme.colorScheme.surfaceContainerLow)
                         .width(timeColumnWidth),
                 timeRange = timeRange,
@@ -130,6 +144,7 @@ internal fun BaseCalendarScreen(
             startDate = dateState.selectedDate,
             events = events,
             holidays = holidays,
+            isVisible = isVisible,
             onDayClick = { date ->
                 dateStateHolder.updateSelectedDateState(date)
                 onDateClickCallback()

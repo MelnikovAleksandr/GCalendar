@@ -16,33 +16,53 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.transitions.SharedElementType
+import ru.melnikov.gcalendar.ui.transitions.sharedEventElement
 
 @Composable
 fun EventItem(
     title: String,
     color: Color,
     onClick: () -> Unit,
-    timeText: String? = null
+    modifier: Modifier = Modifier,
+    eventId: String? = null,
+    isVisible: Boolean = true,
+    timeText: String? = null,
 ) {
     val backgroundColor = remember(color) { color.copy(alpha = 0.15f) }
     val timeTextColor = remember(color) { color.copy(alpha = 0.7f) }
 
+    val surfaceModifier =
+        if (eventId != null) {
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+                .sharedEventElement(
+                    eventId = eventId,
+                    type = SharedElementType.EventCard,
+                    isVisible = isVisible,
+                )
+                .clickable(onClick = onClick)
+        } else {
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+                .clickable(onClick = onClick)
+        }
+
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .clickable(onClick = onClick),
+        modifier = surfaceModifier,
         color = backgroundColor,
-        shape = RoundedCornerShape(4.dp)
+        shape = RoundedCornerShape(4.dp),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
                 text = title,
                 style = GCalendarTheme.typography.bodyMedium,
                 color = color,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             timeText?.let {
@@ -50,7 +70,7 @@ fun EventItem(
                     text = it,
                     style = GCalendarTheme.typography.labelSmall,
                     color = timeTextColor,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
                 )
             }
         }

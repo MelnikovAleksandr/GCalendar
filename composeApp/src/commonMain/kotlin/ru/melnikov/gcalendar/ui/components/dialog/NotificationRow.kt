@@ -55,8 +55,8 @@ internal fun NotificationRow(
     }
 }
 
-private fun formatReminderText(minutes: Int): String {
-    return when {
+private fun formatReminderText(minutes: Int): String =
+    when {
         minutes <= 0 -> "No reminder"
         minutes < 60 -> "$minutes minutes before"
         minutes == 60 -> "1 hour before"
@@ -64,7 +64,7 @@ private fun formatReminderText(minutes: Int): String {
         minutes == 1440 -> "1 day before"
         else -> "${minutes / 1440} days before"
     }
-}
+
 
 @Composable
 internal fun EventOptionRow(

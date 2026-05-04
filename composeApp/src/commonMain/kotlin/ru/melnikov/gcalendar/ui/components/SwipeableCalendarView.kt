@@ -27,6 +27,7 @@ internal fun SwipeableCalendarView(
     startDate: LocalDate,
     events: ImmutableList<Event>,
     holidays: ImmutableList<Holiday>,
+    isVisible: Boolean = true,
     onDayClick: (LocalDate) -> Unit,
     onEventClick: (Event) -> Unit,
     onDateRangeChange: (LocalDate) -> Unit,
@@ -35,7 +36,7 @@ internal fun SwipeableCalendarView(
     hourHeightDp: Float = 60f,
     scrollState: ScrollState,
     currentDate: LocalDate,
-    dynamicHeaderHeightState: MutableState<Int>
+    dynamicHeaderHeightState: MutableState<Int>,
 ) {
     require(numDays in 1..31) { "numDays must be between 1 and 31" }
 
@@ -77,6 +78,7 @@ internal fun SwipeableCalendarView(
             numDays = numDays,
             eventsByDate = eventsByDate,
             holidaysByDate = holidaysByDate,
+            isVisible = isVisible,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onDayClick = onDayClick,
@@ -95,6 +97,7 @@ private fun CalendarContent(
     numDays: Int,
     eventsByDate: ImmutableMap<LocalDate, ImmutableList<Event>>,
     holidaysByDate: ImmutableMap<LocalDate, ImmutableList<Holiday>>,
+    isVisible: Boolean = true,
     timeRange: IntRange,
     hourHeightDp: Float,
     onDayClick: (LocalDate) -> Unit,
@@ -102,7 +105,7 @@ private fun CalendarContent(
     currentDate: LocalDate,
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
-    dynamicHeaderHeightState: MutableState<Int>?
+    dynamicHeaderHeightState: MutableState<Int>?,
 ) {
     Column(modifier) {
         DaysHeaderRow(
@@ -110,6 +113,7 @@ private fun CalendarContent(
             numDays = numDays,
             currentDate = currentDate,
             holidaysByDate = holidaysByDate,
+            isVisible = isVisible,
             onDayClick = onDayClick,
             modifier = Modifier.fillMaxWidth(),
             dynamicHeaderHeightState = dynamicHeaderHeightState,
@@ -119,6 +123,7 @@ private fun CalendarContent(
             startDate = startDate,
             numDays = numDays,
             eventsByDate = eventsByDate,
+            isVisible = isVisible,
             timeRange = timeRange,
             hourHeightDp = hourHeightDp,
             onEventClick = onEventClick,

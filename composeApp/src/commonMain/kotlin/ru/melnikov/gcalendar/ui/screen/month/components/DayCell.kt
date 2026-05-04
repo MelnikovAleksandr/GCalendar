@@ -29,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -36,19 +38,21 @@ import ru.melnikov.gcalendar.common.noRippleClickable
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.transitions.SharedElementType
+import ru.melnikov.gcalendar.ui.transitions.sharedDateElement
+import ru.melnikov.gcalendar.ui.transitions.sharedEventElement
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
+@OptIn(ExperimentalTime::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DayCell(
     modifier: Modifier,
     date: LocalDate,
-    events: List<Event>,
-    holidays: List<Holiday>,
+    events: ImmutableList<Event>,
+    holidays: ImmutableList<Holiday>,
     isCurrentMonth: Boolean,
+    isVisible: Boolean = true,
     onDayClick: (LocalDate) -> Unit,
     itemSize: DpSize,
     isTopLeft: Boolean = false,
@@ -93,8 +97,13 @@ fun DayCell(
             modifier =
                 Modifier
                     .padding(top = GCalendarTheme.dimensions.spacing_4)
-                    .clip(MaterialShapes.Cookie9Sided.toShape())
                     .size(30.dp)
+                    .sharedDateElement(
+                        date = date,
+                        type = SharedElementType.DateCell,
+                        isVisible = isVisible,
+                    )
+                    .clip(MaterialShapes.Cookie9Sided.toShape())
                     .background(
                         when {
                             isToday -> GCalendarTheme.colorScheme.primary
@@ -132,6 +141,12 @@ fun DayCell(
             displayedEvents.forEach { event ->
                 Spacer(modifier = Modifier.height(2.dp))
                 EventTag(
+                    modifier =
+                        Modifier.sharedEventElement(
+                            eventId = event.id,
+                            type = SharedElementType.EventCard,
+                            isVisible = isVisible,
+                        ),
                     text = event.title,
                     color = Color(event.color),
                     textColor = GCalendarTheme.colorScheme.inverseOnSurface,
@@ -160,8 +175,8 @@ fun DayCellPreview() {
         DayCell(
             modifier = Modifier,
             date = LocalDate(2025, 12, 12),
-            events = emptyList(),
-            holidays = emptyList(),
+            events = persistentListOf(),
+            holidays = persistentListOf(),
             isCurrentMonth = true,
             onDayClick = {},
             itemSize = DpSize(40.dp, 40.dp)

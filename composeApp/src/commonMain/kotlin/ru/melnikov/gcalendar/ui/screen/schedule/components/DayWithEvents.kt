@@ -33,6 +33,7 @@ fun DayWithEvents(
     date: LocalDate,
     events: List<Event>,
     holidays: List<Holiday>,
+    isVisible: Boolean = true,
     onEventClick: (Event) -> Unit
 ) {
     val today = remember {
@@ -96,6 +97,8 @@ fun DayWithEvents(
                     title = event.title,
                     color = Color(event.color),
                     onClick = { onEventClick(event) },
+                    eventId = event.id,
+                    isVisible = isVisible,
                     timeText = timeText
                 )
             }

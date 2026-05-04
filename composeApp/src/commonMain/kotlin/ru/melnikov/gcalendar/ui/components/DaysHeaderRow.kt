@@ -42,6 +42,8 @@ import kotlinx.datetime.plus
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.screen.month.components.EventTag
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.transitions.SharedElementType
+import ru.melnikov.gcalendar.ui.transitions.sharedDateElement
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -50,6 +52,7 @@ internal fun DaysHeaderRow(
     numDays: Int,
     currentDate: LocalDate,
     holidaysByDate: ImmutableMap<LocalDate, ImmutableList<Holiday>>,
+    isVisible: Boolean = true,
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     dynamicHeaderHeightState: MutableState<Int>?,
@@ -82,6 +85,11 @@ internal fun DaysHeaderRow(
                             .fillMaxHeight()
                             .weight(1f)
                             .padding(top = 8.dp)
+                            .sharedDateElement(
+                                date = date,
+                                type = SharedElementType.DayHeader,
+                                isVisible = isVisible,
+                            )
                             .clickable { onDayClick(date) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -93,8 +101,13 @@ internal fun DaysHeaderRow(
                         modifier =
                             Modifier
                                 .padding(vertical = GCalendarTheme.dimensions.spacing_4)
-                                .clip(MaterialShapes.Cookie9Sided.toShape())
                                 .size(30.dp)
+                                .sharedDateElement(
+                                    date = date,
+                                    type = SharedElementType.DateCell,
+                                    isVisible = isVisible,
+                                )
+                                .clip(MaterialShapes.Cookie9Sided.toShape())
                                 .background(
                                     when {
                                         isToday -> GCalendarTheme.colorScheme.primary
