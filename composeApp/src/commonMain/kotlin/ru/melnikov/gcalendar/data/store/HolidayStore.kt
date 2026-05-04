@@ -7,8 +7,8 @@ import org.mobilenativefoundation.store.store5.Store
 import org.mobilenativefoundation.store.store5.StoreBuilder
 import ru.melnikov.gcalendar.common.AppLogger
 import ru.melnikov.gcalendar.common.DateRangeHelper
-import ru.melnikov.gcalendar.common.asHoliday
-import ru.melnikov.gcalendar.common.asHolidayEntity
+import ru.melnikov.gcalendar.common.model.asHoliday
+import ru.melnikov.gcalendar.common.model.asHolidayEntity
 import ru.melnikov.gcalendar.data.local.HolidayDao
 import ru.melnikov.gcalendar.data.remote.HolidayApiService
 import ru.melnikov.gcalendar.data.remote.Result
@@ -52,7 +52,7 @@ object HolidayStoreFactory {
             val (startDate, endDate) = getDateRangeForYear(key.year)
             holidayDao.getHolidaysInRange(startDate, endDate).map { entities ->
                 entities
-                    .filter { it.countryCode == key.countryCode.lowercase() }
+                    .filter { it.countryCode.equals(key.countryCode, ignoreCase = true) }
                     .map { it.asHoliday() }
             }
         },

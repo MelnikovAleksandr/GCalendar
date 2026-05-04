@@ -61,7 +61,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
-import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.model.YearMonth
 import ru.melnikov.gcalendar.common.isLeap
 import ru.melnikov.gcalendar.common.lengthOfMonth
 import ru.melnikov.gcalendar.common.noRippleClickable

@@ -155,12 +155,7 @@ private fun EventTitleRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .sharedEventElement(
-                    eventId = eventId,
-                    type = SharedElementType.EventCard,
-                    isVisible = true,
-                ),
+                .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

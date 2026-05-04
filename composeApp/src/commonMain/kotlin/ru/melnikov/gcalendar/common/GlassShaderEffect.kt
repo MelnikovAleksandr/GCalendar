@@ -14,6 +14,12 @@ data class AbsorptionColor(
     }
 }
 
+data class ReplacementColor(
+    val r: Float,
+    val g: Float,
+    val b: Float,
+)
+
 data class GlassShaderParams(
     val width: Float = 0.5f,
     val height: Float = 0.3f,
@@ -29,7 +35,13 @@ data class GlassShaderParams(
     val frostedBlurRadius: Float = 0.0f,
     val absorptionColor: AbsorptionColor = AbsorptionColor.CLEAR,
     val absorptionDensity: Float = 0.0f,
+    val sourceColor: ReplacementColor? = null,
+    val targetColor: ReplacementColor? = null,
+    val colorTolerance: Float = 0.15f,
 ) {
+    val colorReplaceEnabled: Boolean
+        get() = sourceColor != null && targetColor != null
+
     companion object {
         fun magnifyingLens() =
             GlassShaderParams(

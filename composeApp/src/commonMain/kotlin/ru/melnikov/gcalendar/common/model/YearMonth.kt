@@ -1,9 +1,10 @@
-package ru.melnikov.gcalendar.common
+package ru.melnikov.gcalendar.common.model
 
 import androidx.compose.runtime.Immutable
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.number
+import ru.melnikov.gcalendar.common.isLeap
 
 @Immutable
 data class YearMonth(

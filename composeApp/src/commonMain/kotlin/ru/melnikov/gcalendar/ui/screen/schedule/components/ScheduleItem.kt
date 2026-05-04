@@ -2,7 +2,7 @@ package ru.melnikov.gcalendar.ui.screen.schedule.components
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
-import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.model.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 

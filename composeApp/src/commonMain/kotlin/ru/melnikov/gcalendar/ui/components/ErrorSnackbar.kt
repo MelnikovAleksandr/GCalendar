@@ -32,13 +32,13 @@ fun ErrorSnackBar(
     message: String?,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    autoDismissMillis: Long = 4000L
+    autoDismissMillis: Long = 4000L,
 ) {
     AnimatedVisibility(
         visible = message != null,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         message?.let {
             LaunchedEffect(message) {
@@ -47,31 +47,33 @@ fun ErrorSnackBar(
             }
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(GCalendarTheme.colorScheme.errorContainer)
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(GCalendarTheme.colorScheme.errorContainer)
+                        .padding(16.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = it,
                         style = GCalendarTheme.typography.bodyMedium,
                         color = GCalendarTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     Icon(
                         painter = painterResource(Res.drawable.ic_close),
                         contentDescription = "Dismiss",
                         tint = GCalendarTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .clickable { onDismiss() }
+                        modifier =
+                            Modifier
+                                .padding(start = 8.dp)
+                                .clickable { onDismiss() },
                     )
                 }
             }

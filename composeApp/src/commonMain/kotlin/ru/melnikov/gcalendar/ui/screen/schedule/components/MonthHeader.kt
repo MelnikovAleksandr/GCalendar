@@ -13,7 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.coil3.CoilImage
 import kotlinx.datetime.Month
-import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.model.YearMonth
 import ru.melnikov.gcalendar.common.toSentenceCase
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 

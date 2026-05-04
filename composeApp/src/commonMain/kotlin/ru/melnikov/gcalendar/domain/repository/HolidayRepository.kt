@@ -4,6 +4,7 @@ package ru.melnikov.gcalendar.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 import org.mobilenativefoundation.store.store5.Store
@@ -21,24 +22,14 @@ class HolidayRepository(
     override suspend fun updateHolidays(
         countryCode: String,
         year: Int,
-    ) = safeCallOrThrow("updateHolidays($countryCode, $year)") {
+    ): Unit = safeCallOrThrow("updateHolidays($countryCode, $year)") {
         val key = HolidayKey(countryCode, year)
-        val request = StoreReadRequest.fresh(key)
-        holidayStore.stream(request).collect { response ->
-            when (response) {
-                is StoreReadResponse.Data -> {
-                    logDebug { "Successfully refreshed holidays for $countryCode, $year: ${response.value.size} holidays" }
-                    return@collect
-                }
-                is StoreReadResponse.Error.Exception -> {
-                    throw response.error
-                }
-                is StoreReadResponse.Error.Message -> {
-                    throw RepositoryException(response.message)
-                }
-                else -> {}
+        holidayStore.stream(StoreReadRequest.fresh(key))
+            .filterIsInstance<StoreReadResponse.Data<List<Holiday>>>()
+            .first()
+            .also { response ->
+                logDebug { "Successfully refreshed holidays for $countryCode, $year: ${response.value.size} holidays" }
             }
-        }
     }
 
     override fun getHolidaysForYear(

@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
-import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.model.YearMonth
 import ru.melnikov.gcalendar.domain.model.Event
 import ru.melnikov.gcalendar.domain.model.Holiday
 import ru.melnikov.gcalendar.ui.state.DateStateHolder

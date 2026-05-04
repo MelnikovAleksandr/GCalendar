@@ -25,22 +25,23 @@ fun HolidayTag(
 ) {
     Text(
         text = name,
-        style = if (compact) {
-            GCalendarTheme.typography.labelSmallEmphasized.copy(fontSize = 8.sp)
-        } else {
-            GCalendarTheme.typography.labelMedium
-        },
+        style =
+            if (compact) {
+                GCalendarTheme.typography.labelSmallEmphasized.copy(fontSize = 8.sp)
+            } else {
+                GCalendarTheme.typography.labelMedium
+            },
         textAlign = TextAlign.Start,
         maxLines = 1,
         color = GCalendarColors.onHoliday,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                GCalendarColors.holiday,
-                RoundedCornerShape(if (compact) 4.dp else 8.dp)
-            )
-            .padding(if (compact) 2.dp else 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(
+                    GCalendarColors.holiday,
+                    RoundedCornerShape(if (compact) 4.dp else 8.dp),
+                ).padding(if (compact) 2.dp else 8.dp),
     )
 }
 
@@ -55,12 +56,12 @@ fun ScheduleHolidayTag(
         maxLines = 1,
         color = GCalendarColors.scheduleHoliday,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                GCalendarColors.scheduleHolidayContainer,
-                RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(
+                    GCalendarColors.scheduleHolidayContainer,
+                    RoundedCornerShape(4.dp),
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
     )
 }

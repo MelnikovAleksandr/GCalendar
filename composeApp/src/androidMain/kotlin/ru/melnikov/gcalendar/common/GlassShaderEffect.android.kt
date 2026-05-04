@@ -47,6 +47,21 @@ private fun createGlassRenderEffectApi33(
     )
     shader.setFloatUniform("absorptionDensity", params.absorptionDensity)
 
+    shader.setFloatUniform(
+        "sourceColor",
+        params.sourceColor?.r ?: 0f,
+        params.sourceColor?.g ?: 0f,
+        params.sourceColor?.b ?: 0f,
+    )
+    shader.setFloatUniform(
+        "targetColor",
+        params.targetColor?.r ?: 0f,
+        params.targetColor?.g ?: 0f,
+        params.targetColor?.b ?: 0f,
+    )
+    shader.setFloatUniform("colorTolerance", params.colorTolerance)
+    shader.setFloatUniform("colorReplaceEnabled", if (params.colorReplaceEnabled) 1f else 0f)
+
     return RenderEffect
         .createRuntimeShaderEffect(shader, "content")
         .asComposeRenderEffect()

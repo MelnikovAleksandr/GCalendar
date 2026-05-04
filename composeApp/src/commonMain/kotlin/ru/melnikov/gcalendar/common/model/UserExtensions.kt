@@ -1,4 +1,4 @@
-package ru.melnikov.gcalendar.common
+package ru.melnikov.gcalendar.common.model
 
 import ru.melnikov.gcalendar.data.local.model.UserEntity
 import ru.melnikov.gcalendar.domain.model.User

@@ -13,7 +13,7 @@ import org.mobilenativefoundation.store.store5.MutableStore
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import org.mobilenativefoundation.store.store5.StoreWriteRequest
-import ru.melnikov.gcalendar.common.asEntity
+import ru.melnikov.gcalendar.common.model.asEntity
 import ru.melnikov.gcalendar.data.local.EventDao
 import ru.melnikov.gcalendar.data.store.EventKey
 import ru.melnikov.gcalendar.data.store.SingleEventKey

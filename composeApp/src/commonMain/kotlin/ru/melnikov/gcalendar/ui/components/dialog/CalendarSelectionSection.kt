@@ -46,15 +46,17 @@ internal fun CalendarSelectionSection(
     Column(modifier = modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp, start = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp, start = 16.dp),
         ) {
             CoilImage(
                 imageModel = { user.photoUrl },
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape),
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape),
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -90,33 +92,33 @@ private fun CalendarList(
             val isSelected = selectedCalendarId == calendar.id
 
             Row(
-                modifier = Modifier
-                    .padding(
-                        start = if (index == 0) 50.dp else 0.dp,
-                        end = if (index == calendars.size - 1) 16.dp else 0.dp,
-                    )
-                    .border(
-                        0.5.dp,
-                        GCalendarTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(8.dp),
-                    )
-                    .background(
-                        color = if (!isSelected) {
-                            GCalendarTheme.colorScheme.surfaceContainerLow
-                        } else {
-                            GCalendarTheme.colorScheme.primary
-                        },
-                        RoundedCornerShape(8.dp),
-                    )
-                    .padding(8.dp)
-                    .noRippleClickable { onCalendarSelected(calendar.id) },
+                modifier =
+                    Modifier
+                        .padding(
+                            start = if (index == 0) 50.dp else 0.dp,
+                            end = if (index == calendars.size - 1) 16.dp else 0.dp,
+                        ).border(
+                            0.5.dp,
+                            GCalendarTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(8.dp),
+                        ).background(
+                            color =
+                                if (!isSelected) {
+                                    GCalendarTheme.colorScheme.surfaceContainerLow
+                                } else {
+                                    GCalendarTheme.colorScheme.primary
+                                },
+                            RoundedCornerShape(8.dp),
+                        ).padding(8.dp)
+                        .noRippleClickable { onCalendarSelected(calendar.id) },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(Color(calendar.color)),
+                    modifier =
+                        Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(calendar.color)),
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -124,11 +126,12 @@ private fun CalendarList(
                 Text(
                     text = calendar.name,
                     style = GCalendarTheme.typography.bodySmall,
-                    color = if (!isSelected) {
-                        GCalendarTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        GCalendarTheme.colorScheme.onPrimary
-                    }
+                    color =
+                        if (!isSelected) {
+                            GCalendarTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            GCalendarTheme.colorScheme.onPrimary
+                        }
                 )
             }
         }

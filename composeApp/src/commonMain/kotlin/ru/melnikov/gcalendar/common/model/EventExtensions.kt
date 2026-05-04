@@ -1,5 +1,6 @@
-package ru.melnikov.gcalendar.common
+package ru.melnikov.gcalendar.common.model
 
+import ru.melnikov.gcalendar.common.convertStringToColor
 import ru.melnikov.gcalendar.data.local.model.EventEntity
 import ru.melnikov.gcalendar.data.local.model.EventWithReminders
 import ru.melnikov.gcalendar.data.remote.model.EventResponseItem

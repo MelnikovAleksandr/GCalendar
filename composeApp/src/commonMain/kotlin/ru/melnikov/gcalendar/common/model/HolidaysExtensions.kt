@@ -1,5 +1,6 @@
-package ru.melnikov.gcalendar.common
+package ru.melnikov.gcalendar.common.model
 
+import ru.melnikov.gcalendar.common.parseDateTime
 import ru.melnikov.gcalendar.data.local.model.HolidayEntity
 import ru.melnikov.gcalendar.data.remote.model.HolidayItem
 import ru.melnikov.gcalendar.domain.model.Holiday

@@ -28,27 +28,29 @@ fun DayNumber(
     size: Dp = 30.dp,
 ) {
     Box(
-        modifier = modifier
-            .clip(MaterialShapes.Cookie9Sided.toShape())
-            .size(size)
-            .background(
-                when {
-                    isToday -> GCalendarTheme.colorScheme.primary
-                    isSelected -> GCalendarTheme.colorScheme.primaryContainer
-                    else -> Color.Transparent
-                }
-            ),
+        modifier =
+            modifier
+                .clip(MaterialShapes.Cookie9Sided.toShape())
+                .size(size)
+                .background(
+                    when {
+                        isToday -> GCalendarTheme.colorScheme.primary
+                        isSelected -> GCalendarTheme.colorScheme.primaryContainer
+                        else -> Color.Transparent
+                    },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = day.toString(),
             style = GCalendarTheme.typography.labelSmall,
-            color = when {
-                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                isSelected -> GCalendarTheme.colorScheme.onPrimaryContainer
-                isCurrentMonth -> GCalendarTheme.colorScheme.onSurface
-                else -> GCalendarTheme.colorScheme.onSurfaceVariant
-            },
+            color =
+                when {
+                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                    isSelected -> GCalendarTheme.colorScheme.onPrimaryContainer
+                    isCurrentMonth -> GCalendarTheme.colorScheme.onSurface
+                    else -> GCalendarTheme.colorScheme.onSurfaceVariant
+                },
             textAlign = TextAlign.Center,
         )
     }
@@ -63,24 +65,26 @@ fun DayNumberLarge(
     size: Dp = 30.dp,
 ) {
     Box(
-        modifier = modifier
-            .clip(MaterialShapes.Cookie9Sided.toShape())
-            .size(size)
-            .background(
-                when {
-                    isToday -> GCalendarTheme.colorScheme.primary
-                    else -> Color.Transparent
-                }
-            ),
+        modifier =
+            modifier
+                .clip(MaterialShapes.Cookie9Sided.toShape())
+                .size(size)
+                .background(
+                    when {
+                        isToday -> GCalendarTheme.colorScheme.primary
+                        else -> Color.Transparent
+                    },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = day.toString(),
             style = GCalendarTheme.typography.bodyMedium,
-            color = when {
-                isToday -> GCalendarTheme.colorScheme.inverseOnSurface
-                else -> GCalendarTheme.colorScheme.onSurface
-            },
+            color =
+                when {
+                    isToday -> GCalendarTheme.colorScheme.inverseOnSurface
+                    else -> GCalendarTheme.colorScheme.onSurface
+                },
         )
     }
 }

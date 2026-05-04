@@ -10,17 +10,27 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun rememberToday(): LocalDate = remember {
-    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-}
+fun rememberToday(): LocalDate =
+    remember {
+        Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+    }
 
 @OptIn(ExperimentalTime::class)
-fun today(): LocalDate {
-    return Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-}
+fun today(): LocalDate =
+    Clock.System
+        .now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .date
 
 @OptIn(ExperimentalTime::class)
 fun LocalDate.isToday(): Boolean {
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val today =
+        Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
     return this == today
 }

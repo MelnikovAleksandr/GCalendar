@@ -14,8 +14,8 @@ import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.Updater
 import org.mobilenativefoundation.store.store5.UpdaterResult
 import ru.melnikov.gcalendar.common.AppLogger
-import ru.melnikov.gcalendar.common.asEntity
-import ru.melnikov.gcalendar.common.asEvent
+import ru.melnikov.gcalendar.common.model.asEntity
+import ru.melnikov.gcalendar.common.model.asEvent
 import ru.melnikov.gcalendar.data.local.EventDao
 import ru.melnikov.gcalendar.data.local.model.EventReminderEntity
 import ru.melnikov.gcalendar.data.remote.RemoteCalendarApiService

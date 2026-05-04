@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -28,7 +25,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.CalendarViewModel
 import ru.melnikov.gcalendar.ui.components.CalendarBottomNavigationBar
 import ru.melnikov.gcalendar.ui.components.CalendarTopAppBar
@@ -38,6 +34,7 @@ import ru.melnikov.gcalendar.ui.components.dialog.EventDetailsDialog
 import ru.melnikov.gcalendar.ui.navigation.NavigableScreen
 import ru.melnikov.gcalendar.ui.navigation.NavigationHost
 import ru.melnikov.gcalendar.ui.navigation.replaceLast
+import ru.melnikov.gcalendar.ui.state.DateStateHolder
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
 import ru.melnikov.gcalendar.ui.viewmodel.EventViewModel
 
@@ -80,7 +77,6 @@ private fun CalendarApp(
     val eventUiState by eventViewModel.uiState.collectAsState()
     val dataState by dateStateHolder.currentDateState.collectAsState()
     val backStack = rememberNavBackStack(config, NavigableScreen.Month)
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showAddBottomSheet by remember { mutableStateOf(false) }
     val selectedEvent = eventUiState.selectedEvent
     val showDetailsBottomSheet = selectedEvent != null
@@ -138,7 +134,7 @@ private fun CalendarApp(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = paddingValues.calculateBottomPadding()),
-                selectedView = backStack.lastOrNull() as NavigableScreen,
+                selectedView = backStack.lastOrNull() as? NavigableScreen ?: NavigableScreen.Month,
                 onViewSelect = { view ->
                     backStack.replaceLast(view)
                 },
@@ -146,46 +142,32 @@ private fun CalendarApp(
             )
         }
         if (showAddBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showAddBottomSheet = false },
-                sheetState = sheetState,
-                properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
-            ) {
-                calendarUiState.accounts.firstOrNull()?.let {
-                    AddEventDialog(
-                        user = it,
-                        calendars = visibleCalendars.toImmutableList(),
-                        selectedDate = dataState.currentDate,
-                        onSave = { event ->
-                            eventViewModel.addEvent(event)
-                            showAddBottomSheet = false
-                        },
-                        onDismiss = {
-                            showAddBottomSheet = false
-                        },
-                    )
-                }
-            }
-        }
-
-        if (showDetailsBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    eventViewModel.clearSelectedEvent()
-                },
-                sheetState = sheetState,
-                properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true),
-            ) {
-                EventDetailsDialog(
-                    event = selectedEvent,
-                    onEdit = { editedEvent ->
-                        eventViewModel.editEvent(editedEvent)
+            calendarUiState.accounts.firstOrNull()?.let {
+                AddEventDialog(
+                    user = it,
+                    calendars = visibleCalendars.toImmutableList(),
+                    selectedDate = dataState.currentDate,
+                    onSave = { event ->
+                        eventViewModel.addEvent(event)
+                        showAddBottomSheet = false
                     },
                     onDismiss = {
-                        eventViewModel.clearSelectedEvent()
+                        showAddBottomSheet = false
                     },
                 )
             }
+        }
+
+        if (showDetailsBottomSheet && selectedEvent != null) {
+            EventDetailsDialog(
+                event = selectedEvent,
+                onEdit = { editedEvent ->
+                    eventViewModel.editEvent(editedEvent)
+                },
+                onDismiss = {
+                    eventViewModel.clearSelectedEvent()
+                },
+            )
         }
     }
 }

@@ -1,7 +1,9 @@
 package ru.melnikov.gcalendar.ui.components
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -27,18 +29,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -55,17 +61,232 @@ import gcalendar.composeapp.generated.resources.ic_calendar_view_month
 import gcalendar.composeapp.generated.resources.ic_calendar_view_schedule
 import gcalendar.composeapp.generated.resources.ic_calendar_view_three_day
 import gcalendar.composeapp.generated.resources.ic_calendar_view_week
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ru.melnikov.gcalendar.common.GlassShaderParams
+import ru.melnikov.gcalendar.common.ReplacementColor
 import ru.melnikov.gcalendar.common.applyIf
 import ru.melnikov.gcalendar.common.createGlassRenderEffect
 import ru.melnikov.gcalendar.common.noRippleClickable
 import ru.melnikov.gcalendar.ui.navigation.NavigableScreen
 import ru.melnikov.gcalendar.ui.theme.GCalendarTheme
+import ru.melnikov.gcalendar.ui.theme.LocalSharedTransitionScope
 import kotlin.math.abs
 
+private const val MAX_STRETCH = 0.4f
+private const val CLICK_STRETCH = 0.12f
+private const val COMPRESS_RATIO = 0.25f
+private const val DRAG_SENSITIVITY = 30f
+private const val SETTLE_DAMPING = 0.35f
+private const val SETTLE_STIFFNESS = 400f
+
+private object NavBarAnimationSpecs {
+    val indicatorSpring = spring<Float>(Spring.DampingRatioMediumBouncy, Spring.StiffnessHigh)
+    val fluidSettleSpring = spring<Float>(dampingRatio = SETTLE_DAMPING, stiffness = SETTLE_STIFFNESS)
+    val fluidOvershootSpring = spring<Float>(dampingRatio = 0.3f, stiffness = 280f)
+    val fluidClickSpring = spring<Float>(dampingRatio = 0.4f, stiffness = 600f)
+    val clickTransition = tween<Float>(800, easing = FastOutSlowInEasing)
+    val fluidStartTween = tween<Float>(100)
+}
+
+private sealed interface AnimationPhase {
+    data object Idle : AnimationPhase
+
+    data object Dragging : AnimationPhase
+
+    data object ClickAnimating : AnimationPhase
+
+    data object MorphingOut : AnimationPhase
+
+    val showGlassEffect: Boolean get() = this != Idle
+}
+
+@Stable
+private class NavBarState(
+    val indicatorOffset: Animatable<Float, AnimationVector1D>,
+    val indicatorScale: Animatable<Float, AnimationVector1D>,
+    val boxScale: Animatable<Float, AnimationVector1D>,
+    val phase: MutableState<AnimationPhase>,
+    val itemMetrics: SnapshotStateMap<Int, ItemMetrics>,
+    val dragOffset: MutableState<Float>,
+    val dragStartIndex: MutableState<Int>,
+    val indicatorWidthPx: MutableState<Float>,
+    val indicatorInitialized: MutableState<Boolean>,
+    val fluidDeformation: Animatable<Float, AnimationVector1D>,
+) {
+    val glassStretchX: Float get() = 1f + fluidDeformation.value
+    val glassStretchY: Float get() = 1f - fluidDeformation.value * COMPRESS_RATIO
+
+    val dragBounds: Pair<Float, Float>
+        get() =
+            if (itemMetrics.isNotEmpty()) {
+                val firstLeft = itemMetrics[0]?.left ?: 0f
+                val lastLeft = itemMetrics[itemMetrics.size - 1]?.left ?: 0f
+                firstLeft to lastLeft
+            } else {
+                0f to 0f
+            }
+
+    val itemCenters: Map<Int, Float>
+        get() = itemMetrics.mapValues { (_, m) -> m.left + m.width / 2f }
+
+    fun findNearestIndex(indicatorCenter: Float): Int =
+        itemCenters.minByOrNull { (_, center) -> abs(center - indicatorCenter) }?.key
+            ?: dragStartIndex.value
+}
+
+@Composable
+private fun rememberNavBarState(): NavBarState =
+    remember {
+        NavBarState(
+            indicatorOffset = Animatable(0f),
+            indicatorScale = Animatable(1f),
+            boxScale = Animatable(1f),
+            phase = mutableStateOf(AnimationPhase.Idle),
+            itemMetrics = mutableStateMapOf(),
+            dragOffset = mutableStateOf(0f),
+            dragStartIndex = mutableStateOf(-1),
+            indicatorWidthPx = mutableStateOf(0f),
+            indicatorInitialized = mutableStateOf(false),
+            fluidDeformation = Animatable(0f),
+        )
+    }
+
+private data class GlassEffectInput(
+    val navBarSize: IntSize,
+    val state: NavBarState,
+    val onSurfaceColor: Color,
+    val primaryColor: Color,
+)
+
+@Composable
+private fun rememberGlassEffect(input: GlassEffectInput): RenderEffect? {
+    val (navBarSize, state, onSurfaceColor, primaryColor) = input
+    val phase = state.phase.value
+    val indicatorOffset = state.indicatorOffset.value
+    val dragOffset = state.dragOffset.value
+    val indicatorWidthPx = state.indicatorWidthPx.value
+    val indicatorScale = state.indicatorScale.value
+    val glassStretchX = state.glassStretchX
+    val glassStretchY = state.glassStretchY
+
+    return remember(
+        navBarSize,
+        phase,
+        indicatorOffset,
+        dragOffset,
+        indicatorWidthPx,
+        indicatorScale,
+        glassStretchX,
+        glassStretchY,
+        onSurfaceColor,
+        primaryColor,
+    ) {
+        if (!phase.showGlassEffect || navBarSize.width <= 0 || indicatorWidthPx <= 0f) return@remember null
+
+        val effectOffset = if (phase is AnimationPhase.Dragging) dragOffset else indicatorOffset
+        val centerX = (effectOffset + indicatorWidthPx / 2f) / navBarSize.width
+        val glassWidth = (indicatorWidthPx / navBarSize.width) * 1.1f * indicatorScale * glassStretchX
+        val glassHeight = indicatorScale * glassStretchY
+        val cornerRadius = glassHeight * 0.5f
+
+        createGlassRenderEffect(
+            width = navBarSize.width.toFloat(),
+            height = navBarSize.height.toFloat(),
+            params =
+                GlassShaderParams.waterDroplet().copy(
+                    width = glassWidth,
+                    height = glassHeight,
+                    centerX = centerX,
+                    centerY = 0.5f,
+                    cornerRadius = cornerRadius,
+                    thickness = 0.1f,
+                    bevelWidth = 0.25f,
+                    sourceColor = ReplacementColor(
+                        onSurfaceColor.red,
+                        onSurfaceColor.green,
+                        onSurfaceColor.blue
+                    ),
+                    targetColor = ReplacementColor(primaryColor.red, primaryColor.green, primaryColor.blue),
+                    colorTolerance = 0.5f,
+                )
+        )
+    }
+}
+
+private fun Modifier.indicatorDragGesture(
+    state: NavBarState,
+    selectedIndex: Int,
+    navItems: List<NavItem>,
+    coroutineScope: CoroutineScope,
+    onViewSelect: (NavigableScreen) -> Unit
+): Modifier =
+    pointerInput(selectedIndex) {
+        detectDragGesturesAfterLongPress(
+            onDragStart = {
+                state.phase.value = AnimationPhase.Dragging
+                state.dragStartIndex.value = selectedIndex
+                state.dragOffset.value = state.indicatorOffset.value
+            },
+            onDrag = { _, dragAmount ->
+                val (minBound, maxBound) = state.dragBounds
+                state.dragOffset.value = (state.dragOffset.value + dragAmount.x).coerceIn(minBound, maxBound)
+
+                val deformation = (dragAmount.x / DRAG_SENSITIVITY).coerceIn(-1f, 1f) * MAX_STRETCH
+                coroutineScope.launch {
+                    state.fluidDeformation.snapTo(deformation)
+                }
+            },
+            onDragEnd = {
+                coroutineScope.launch {
+                    val indicatorCenter = state.dragOffset.value + (state.indicatorWidthPx.value / 2f)
+                    val nearestIndex = state.findNearestIndex(indicatorCenter)
+                    val targetPos = state.itemMetrics[nearestIndex]?.left ?: state.dragOffset.value
+
+                    val currentDeformation = state.fluidDeformation.value
+                    launch {
+                        state.fluidDeformation.animateTo(
+                            targetValue = -currentDeformation * 0.5f,
+                            animationSpec = NavBarAnimationSpecs.fluidOvershootSpring,
+                        )
+                        state.fluidDeformation.animateTo(0f, NavBarAnimationSpecs.fluidSettleSpring)
+                    }
+
+                    state.indicatorOffset.animateTo(targetPos, NavBarAnimationSpecs.indicatorSpring)
+                    state.phase.value = AnimationPhase.MorphingOut
+
+                    if (nearestIndex != state.dragStartIndex.value) {
+                        onViewSelect(navItems[nearestIndex].screen)
+                    }
+                }
+            },
+        )
+    }
+
+private suspend fun NavBarState.animateClickTransition(targetIndex: Int) {
+    val targetPos = itemMetrics[targetIndex]?.left ?: indicatorOffset.value
+
+    phase.value = AnimationPhase.ClickAnimating
+
+    coroutineScope {
+        launch {
+            indicatorOffset.animateTo(targetPos, NavBarAnimationSpecs.clickTransition)
+        }
+
+        launch {
+            fluidDeformation.animateTo(CLICK_STRETCH, NavBarAnimationSpecs.fluidStartTween)
+            fluidDeformation.animateTo(-CLICK_STRETCH * 0.3f, NavBarAnimationSpecs.fluidClickSpring)
+            fluidDeformation.animateTo(0f, NavBarAnimationSpecs.fluidSettleSpring)
+        }
+    }
+
+    phase.value = AnimationPhase.MorphingOut
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun CalendarBottomNavigationBar(
     modifier: Modifier = Modifier,
@@ -73,14 +294,15 @@ internal fun CalendarBottomNavigationBar(
     onViewSelect: (NavigableScreen) -> Unit,
     onAddClick: () -> Unit,
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val coroutineScope = rememberCoroutineScope()
+    val state = rememberNavBarState()
+    val currentOnViewSelect by rememberUpdatedState(onViewSelect)
+
     val navItems =
         remember {
             listOf(
-                NavItem(
-                    NavigableScreen.Schedule,
-                    Res.drawable.ic_calendar_view_schedule,
-                    "Schedule",
-                ),
+                NavItem(NavigableScreen.Schedule, Res.drawable.ic_calendar_view_schedule, "Schedule"),
                 NavItem(NavigableScreen.Day, Res.drawable.ic_calendar_view_day, "Day"),
                 NavItem(NavigableScreen.ThreeDay, Res.drawable.ic_calendar_view_three_day, "3 Day"),
                 NavItem(NavigableScreen.Week, Res.drawable.ic_calendar_view_week, "Week"),
@@ -88,298 +310,134 @@ internal fun CalendarBottomNavigationBar(
             )
         }
 
-    val coroutineScope = rememberCoroutineScope()
-    val itemMetrics = remember { mutableStateMapOf<Int, ItemMetrics>() }
-    val indicatorOffset = remember { Animatable(0f) }
-    val indicatorScale = remember { Animatable(1f) }
-    val boxScale = remember { Animatable(1f) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
-    var isDragging by remember { mutableStateOf(false) }
-    var dragStartIndex by remember { mutableStateOf(-1) }
-    var indicatorWidthPx by remember { mutableFloatStateOf(0f) }
-    var indicatorInitialized by remember { mutableStateOf(false) }
-    var isClickAnimating by remember { mutableStateOf(false) }
-    var isMorphingOut by remember { mutableStateOf(false) }
-
-    val dragScaleFactor = 1.25f
-
-    val selectedIndex =
-        navItems.indexOfFirst {
-            it.screen == selectedView
-        }
-
-    val currentOnViewSelect by rememberUpdatedState(onViewSelect)
-
-    val dragBounds by remember {
-        derivedStateOf {
-            if (itemMetrics.size == navItems.size && navItems.isNotEmpty()) {
-                val firstLeft = itemMetrics[0]?.left ?: 0f
-                val lastLeft = itemMetrics[navItems.size - 1]?.left ?: 0f
-                firstLeft to lastLeft
-            } else {
-                0f to 0f
-            }
-        }
+    val selectedIndex by remember(selectedView) {
+        derivedStateOf { navItems.indexOfFirst { it.screen == selectedView } }
     }
 
-    val itemCenters by remember {
-        derivedStateOf {
-            itemMetrics.mapValues { (_, metrics) ->
-                metrics.left + (metrics.width / 2f)
-            }
-        }
-    }
-
-    LaunchedEffect(selectedIndex, itemMetrics.size, indicatorWidthPx, isDragging) {
-        if (
-            !isDragging &&
-            selectedIndex >= 0 &&
-            itemMetrics.containsKey(selectedIndex)
+    LaunchedEffect(selectedIndex, state.itemMetrics.size) {
+        if (state.phase.value is AnimationPhase.Dragging ||
+            state.phase.value is AnimationPhase.ClickAnimating ||
+            selectedIndex < 0
         ) {
-            indicatorWidthPx = itemMetrics[selectedIndex]?.width ?: indicatorWidthPx
-            val targetPos = itemMetrics[selectedIndex]?.left ?: return@LaunchedEffect
-            if (indicatorInitialized && abs(indicatorOffset.value - targetPos) >= 0.5f) {
-                indicatorOffset.animateTo(
-                    targetValue = targetPos,
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessHigh,
-                        ),
-                )
-            } else {
-                indicatorOffset.snapTo(targetPos)
-                indicatorInitialized = true
-            }
-        }
-    }
-
-    LaunchedEffect(itemMetrics.size) {
-        if (itemMetrics.size != navItems.size) {
-            indicatorInitialized = false
             return@LaunchedEffect
         }
-        if (selectedIndex < 0) return@LaunchedEffect
-        if (!indicatorInitialized) {
-            val initialPos = itemMetrics[selectedIndex]?.left ?: 0f
-            indicatorOffset.snapTo(initialPos)
-            indicatorInitialized = true
+        val metrics = state.itemMetrics[selectedIndex] ?: return@LaunchedEffect
+
+        state.indicatorWidthPx.value = metrics.width
+        val targetPos = metrics.left
+
+        if (state.indicatorInitialized.value && abs(state.indicatorOffset.value - targetPos) >= 0.5f) {
+            state.indicatorOffset.animateTo(targetPos, NavBarAnimationSpecs.indicatorSpring)
+        } else {
+            state.indicatorOffset.snapTo(targetPos)
+            state.indicatorInitialized.value = true
         }
     }
 
-    LaunchedEffect(isDragging, isClickAnimating) {
-        if (isDragging || isClickAnimating) {
-            indicatorScale.animateTo(
-                targetValue = dragScaleFactor,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessHigh,
-                    ),
-            )
-        }
-    }
-
-    LaunchedEffect(isMorphingOut) {
-        if (isMorphingOut) {
-            indicatorScale.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessHigh,
-                    ),
-            )
-            isMorphingOut = false
-        }
-    }
-
-    LaunchedEffect(isDragging, isClickAnimating, isMorphingOut) {
-        boxScale.animateTo(
-            targetValue = if (isDragging || isClickAnimating || isMorphingOut) 1.05f else 1f,
-            animationSpec =
-                spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessHigh,
-                ),
-        )
-    }
-
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        var navBarSize by remember { mutableStateOf(IntSize.Zero) }
-
-        val glassEffect =
-            remember(
-                navBarSize,
-                isDragging,
-                isClickAnimating,
-                isMorphingOut,
-                dragOffset,
-                indicatorWidthPx,
-                indicatorOffset.value,
-                indicatorScale.value,
-            ) {
-                if ((isDragging || isClickAnimating || isMorphingOut) && navBarSize.width > 0 && navBarSize.height > 0 && indicatorWidthPx > 0f) {
-                    val effectOffset = if (isDragging) dragOffset else indicatorOffset.value
-                    val centerX = (effectOffset + indicatorWidthPx / 2f) / navBarSize.width
-                    val centerY = 0.5f
-
-                    val glassWidth =
-                        (indicatorWidthPx / navBarSize.width) * 1.3f *
-                                indicatorScale
-                                    .value
-                    val glassHeight = indicatorScale.value
-
-                    val cornerRadius = glassHeight * 0.5f
-
-                    createGlassRenderEffect(
-                        width = navBarSize.width.toFloat(),
-                        height = navBarSize.height.toFloat(),
-                        params =
-                            GlassShaderParams.waterDroplet().copy(
-                                width = glassWidth,
-                                height = glassHeight,
-                                centerX = centerX,
-                                centerY = centerY,
-                                cornerRadius = cornerRadius,
-                                thickness = 0.1f,
-                                bevelWidth = 0.25f,
-                            ),
-                    )
-                } else {
-                    null
-                }
+    LaunchedEffect(state.phase.value) {
+        when (val phase = state.phase.value) {
+            AnimationPhase.Dragging, AnimationPhase.ClickAnimating -> {
+                launch { state.indicatorScale.animateTo(1.25f, NavBarAnimationSpecs.indicatorSpring) }
+                launch { state.boxScale.animateTo(1.05f, NavBarAnimationSpecs.indicatorSpring) }
             }
 
-        Box(
+            AnimationPhase.MorphingOut, AnimationPhase.Idle -> {
+                launch { state.indicatorScale.animateTo(1f, NavBarAnimationSpecs.indicatorSpring) }
+                launch { state.boxScale.animateTo(1f, NavBarAnimationSpecs.indicatorSpring) }
+                if (phase == AnimationPhase.MorphingOut) {
+                    state.phase.value = AnimationPhase.Idle
+                }
+            }
+        }
+    }
+
+    with(sharedTransitionScope) {
+        Row(
             modifier =
-                Modifier
-                    .height(56.dp)
-                    .weight(1f)
-                    .onSizeChanged { navBarSize = it }
-                    .graphicsLayer {
-                        renderEffect = glassEffect
-                        scaleX = boxScale.value
-                        scaleY = boxScale.value
-                    },
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
+            var navBarSize by remember { mutableStateOf(IntSize.Zero) }
+
+            val glassEffect =
+                rememberGlassEffect(
+                    GlassEffectInput(
+                        navBarSize = navBarSize,
+                        state = state,
+                        onSurfaceColor = GCalendarTheme.colorScheme.onSurface,
+                        primaryColor = GCalendarTheme.colorScheme.primary,
+                    ),
+                )
+
+            Box(
                 modifier =
                     Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(GCalendarTheme.colorScheme.surfaceContainer)
-                        .padding(3.dp)
-                        .pointerInput(selectedIndex) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    isDragging = true
-                                    dragStartIndex = selectedIndex
-                                    dragOffset = indicatorOffset.value
-                                },
-                                onDrag = { _, dragAmount ->
-                                    val (minBound, maxBound) = dragBounds
-                                    dragOffset =
-                                        (dragOffset + dragAmount.x).coerceIn(minBound, maxBound)
-                                },
-                                onDragEnd = {
-                                    coroutineScope.launch {
-                                        val indicatorCenter = dragOffset + (indicatorWidthPx / 2f)
-
-                                        val nearestIndex =
-                                            itemCenters
-                                                .minByOrNull { (_, center) ->
-                                                    abs(center - indicatorCenter)
-                                                }?.key ?: dragStartIndex
-
-                                        val targetPos =
-                                            itemMetrics[nearestIndex]?.left ?: dragOffset
-
-                                        indicatorOffset.animateTo(
-                                            targetValue = targetPos,
-                                            animationSpec =
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                    stiffness = Spring.StiffnessHigh,
-                                                ),
+                        .height(56.dp)
+                        .weight(1f)
+                        .onSizeChanged { navBarSize = it }
+                        .graphicsLayer {
+                            renderEffect = glassEffect
+                            scaleX = state.boxScale.value
+                            scaleY = state.boxScale.value
+                        },
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(30.dp))
+                            .background(GCalendarTheme.colorScheme.surfaceContainer)
+                            .padding(3.dp)
+                            .indicatorDragGesture(state, selectedIndex, navItems, coroutineScope, currentOnViewSelect),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    navItems.forEachIndexed { index, navItem ->
+                        BottomNavItem(
+                            modifier =
+                                Modifier.onGloballyPositioned { coordinates ->
+                                    state.itemMetrics[index] =
+                                        ItemMetrics(
+                                            left = coordinates.positionInParent().x,
+                                            width = coordinates.size.width.toFloat(),
                                         )
-
-                                        isDragging = false
-                                        isMorphingOut = true
-
-                                        if (nearestIndex != dragStartIndex) {
-                                            currentOnViewSelect(navItems[nearestIndex].screen)
-                                        }
+                                    if (state.indicatorWidthPx.value == 0f || index == selectedIndex) {
+                                        state.indicatorWidthPx.value = coordinates.size.width.toFloat()
                                     }
                                 },
-                            )
-                        },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                navItems.forEachIndexed { index, navItem ->
-                    BottomNavItem(
-                        modifier =
-                            Modifier.onGloballyPositioned { coordinates ->
-                                itemMetrics[index] =
-                                    ItemMetrics(
-                                        left = coordinates.positionInParent().x,
-                                        width = coordinates.size.width.toFloat(),
-                                    )
-                                if (indicatorWidthPx == 0f || index == selectedIndex) {
-                                    indicatorWidthPx = coordinates.size.width.toFloat()
+                            showBackground = selectedIndex == index && state.phase.value == AnimationPhase.Idle,
+                            onClick = {
+                                if (index != selectedIndex && state.phase.value == AnimationPhase.Idle) {
+                                    currentOnViewSelect(navItem.screen)
+                                    coroutineScope.launch {
+                                        state.animateClickTransition(index)
+                                    }
                                 }
                             },
-                        selected = selectedIndex == index,
-                        isDragging = isDragging,
-                        isClickAnimating = isClickAnimating,
-                        isMorphingOut = isMorphingOut,
-                        onClick = {
-                            if (index != selectedIndex && !isDragging && !isClickAnimating && !isMorphingOut) {
-                                coroutineScope.launch {
-                                    isClickAnimating = true
-                                    val targetPos =
-                                        itemMetrics[index]?.left ?: indicatorOffset.value
-                                    indicatorOffset.animateTo(
-                                        targetValue = targetPos,
-                                        animationSpec =
-                                            tween(
-                                                durationMillis = 400,
-                                                easing = EaseInCubic,
-                                            ),
-                                    )
-                                    isClickAnimating = false
-                                    isMorphingOut = true
-                                    currentOnViewSelect(navItem.screen)
-                                }
-                            }
-                        },
-                        icon = navItem.icon,
-                        label = navItem.label,
-                    )
+                            icon = navItem.icon,
+                            label = navItem.label,
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-        FloatingActionButton(
-            onClick = onAddClick,
-            shape = CircleShape,
-            containerColor = GCalendarTheme.colorScheme.primary,
-            contentColor = GCalendarTheme.colorScheme.onPrimary,
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_add),
-                contentDescription = "Add Event",
-            )
+            FloatingActionButton(
+                onClick = onAddClick,
+                shape = CircleShape,
+                containerColor = GCalendarTheme.colorScheme.primary,
+                contentColor = GCalendarTheme.colorScheme.onPrimary,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_add),
+                    contentDescription = "Add Event",
+                )
+            }
         }
     }
 }
@@ -398,15 +456,12 @@ private data class ItemMetrics(
 @Composable
 private fun RowScope.BottomNavItem(
     modifier: Modifier = Modifier,
-    selected: Boolean,
-    isDragging: Boolean,
-    isClickAnimating: Boolean,
-    isMorphingOut: Boolean,
+    showBackground: Boolean,
     onClick: () -> Unit,
     icon: DrawableResource,
     label: String,
 ) {
-    val showBackground = selected && !isDragging && !isClickAnimating && !isMorphingOut
+    val tintColor = if (showBackground) GCalendarTheme.colorScheme.primary else GCalendarTheme.colorScheme.onSurface
 
     Column(
         modifier =
@@ -415,10 +470,8 @@ private fun RowScope.BottomNavItem(
                 .weight(1f)
                 .fillMaxHeight()
                 .applyIf(showBackground) {
-                    background(
-                        color = GCalendarTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(30.dp),
-                    ).padding(horizontal = 3.dp)
+                    background(GCalendarTheme.colorScheme.secondaryContainer, RoundedCornerShape(30.dp))
+                        .padding(horizontal = 3.dp)
                 },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -427,25 +480,13 @@ private fun RowScope.BottomNavItem(
             painter = painterResource(icon),
             contentDescription = label,
             modifier = Modifier.size(24.dp),
-            tint =
-                if (showBackground) {
-                    GCalendarTheme.colorScheme.primary
-                } else {
-                    GCalendarTheme.colorScheme.onSurfaceVariant
-                },
+            tint = tintColor,
         )
-
         Spacer(modifier = Modifier.height(4.dp))
-
         Text(
             text = label,
             style = GCalendarTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            color =
-                if (showBackground) {
-                    GCalendarTheme.colorScheme.primary
-                } else {
-                    GCalendarTheme.colorScheme.onSurfaceVariant
-                },
+            color = tintColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

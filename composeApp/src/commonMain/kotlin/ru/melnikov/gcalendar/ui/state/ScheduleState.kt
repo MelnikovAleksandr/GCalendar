@@ -1,6 +1,6 @@
 package ru.melnikov.gcalendar.ui.state
 
-import ru.melnikov.gcalendar.common.YearMonth
+import ru.melnikov.gcalendar.common.model.YearMonth
 
 data class ScheduleState(
     private val startMonth: YearMonth,

@@ -3,8 +3,8 @@ package ru.melnikov.gcalendar.domain.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
-import ru.melnikov.gcalendar.common.asUser
-import ru.melnikov.gcalendar.common.asUserEntity
+import ru.melnikov.gcalendar.common.model.asUser
+import ru.melnikov.gcalendar.common.model.asUserEntity
 import ru.melnikov.gcalendar.data.local.UserDao
 import ru.melnikov.gcalendar.domain.model.User
 
