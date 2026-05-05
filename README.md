@@ -2,10 +2,11 @@ This is a Kotlin Multiplatform project targeting Android, iOS, Desktop (JVM).
 
 | Android | iOS | Desktop                                                                                                                                  |
 |---------|-----|------------------------------------------------------------------------------------------------------------------------------------------|
-|<img src="https://github.com/user-attachments/assets/074886b9-4659-4cf7-8284-65a745fdd409" width="200" height="400" alt="Android Demo"> | <img src="https://github.com/user-attachments/assets/12965abf-ea57-4aed-9bfd-7cdebff3ffc9" width="200" height="400" alt="iOS Demo"> | <img src="https://github.com/user-attachments/assets/870bde67-2ca6-4571-8f19-b9d48fb3d4b7" width="400" height="400" alt="Desktop Demo"> |
+|<video src="https://github.com/user-attachments/assets/074886b9-4659-4cf7-8284-65a745fdd409" width="200" height="400" alt="Android Demo"> | <video src="https://github.com/user-attachments/assets/12965abf-ea57-4aed-9bfd-7cdebff3ffc9" width="200" height="400" alt="iOS Demo"> | <video src="https://github.com/user-attachments/assets/870bde67-2ca6-4571-8f19-b9d48fb3d4b7" width="400" height="400" alt="Desktop Demo"> |
 
 For live holiday data, add to local.properties:
 API_KEY=your_calendarific_api_key
+from https://calendarific.com/
 
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
   It contains several subfolders:
